@@ -287,7 +287,7 @@ STDMETHODIMP TStdXtra_IMoaRegister::Register(PIMoaCache pCache, PIMoaXtraEntryDi
 
 	/* Register SetThe method table */
 	const char *VER_MAJORVERSION_STRING = "1";
-	const char *VER_MINORVERSION_STRING = "1";
+	const char *VER_MINORVERSION_STRING = "2";
 	const char *VER_BUGFIXVERSION_STRING = "0";
 
 	sprintf_s(versionStr, sizeof(versionStr), versionInfo, VER_MAJORVERSION_STRING, VER_MINORVERSION_STRING, VER_BUGFIXVERSION_STRING);
@@ -868,7 +868,7 @@ MoaError setupExtender(MoaMmSymbol methodSelector, HANDLE currentProcess, MODULE
 									  testedShockwave3DAssetXtra85, testedShockwave3DAssetXtra10, testedShockwave3DAssetXtra115,
 									  testedShockwave3DAssetXtraSet,
 									  SIZEOF_TESTED_SHOCKWAVE_3D_ASSET_XTRA_85, SIZEOF_TESTED_SHOCKWAVE_3D_ASSET_XTRA_10, SIZEOF_TESTED_SHOCKWAVE_3D_ASSET_XTRA_115,
-									  0x000DC45E, 0x000F915C, 0x000D6AEF,
+									  0x000DC45E, 0x000F515C, 0x000D6AEF,
 									  pMoaMmValueInterface, pMoaDrMovieInterface, alertSymbol);
 			if (err != kMoaErr_NoErr) {
 				delete textSection;
