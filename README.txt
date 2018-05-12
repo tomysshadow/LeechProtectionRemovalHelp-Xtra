@@ -41,4 +41,4 @@ Usage:
 	* disableGoToNetMovie -- disables goToNetMovie
 	* disableGoToNetPage -- disables goToNetPage
  	-- Bugfix Handlers -- 
-	* bugfixShockwave3DBadDriverList -- fixes Shockwave 3D Bad Driver Bug
+	* bugfixShockwave3DBadDriverList -- bugfixes Shockwave 3D Bad Driver List

@@ -205,7 +205,7 @@ static char msgTable[] = {
 	"* disableGoToNetMovie -- disables goToNetMovie\n"
 	"* disableGoToNetPage -- disables goToNetPage\n"
  	"-- Bugfix Handlers --\n" 
-	"* bugfixShockwave3DBadDriverList -- fixes Shockwave 3D Bad Driver Bug"
+	"* bugfixShockwave3DBadDriverList -- bugfixes Shockwave 3D Bad Driver List"
 	};
 
 enum 
