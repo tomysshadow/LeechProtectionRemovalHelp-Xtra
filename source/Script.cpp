@@ -205,7 +205,7 @@ static char msgTable[] = {
 	"* disableGoToNetMovie -- disables goToNetMovie\n"
 	"* disableGoToNetPage -- disables goToNetPage\n"
  	"-- Bugfix Handlers --\n" 
-	"* BugfixShockwave3DBadDriverList -- fixes Shockwave 3D Bad Driver Bug"
+	"* bugfixShockwave3DBadDriverList -- fixes Shockwave 3D Bad Driver Bug"
 	};
 
 enum 
@@ -220,7 +220,7 @@ enum
 	m_setExternalParam,
 	m_disableGoToNetMovie,
 	m_disableGoToNetPage,
-	m_BugfixShockwave3DBadDriverList,
+	m_bugfixShockwave3DBadDriverList,
 	m_XXXX /* standard last entry */
 };
 
@@ -358,7 +358,7 @@ STDMETHODIMP TStdXtra_IMoaMmXScript::Call(PMoaDrCallInfo callPtr) {
 		// SetThese guys are in SetThe NetLingo Xtra
 		ThrowErr(XScrpGeneral(callPtr, MODULE_HANDLE_SET_NET_LINGO_XTRA));
 		break;
-		case m_BugfixShockwave3DBadDriverList:
+		case m_bugfixShockwave3DBadDriverList:
 		// this one is in SetThe Shockwave 3D Asset Xtra
 		ThrowErr(XScrpGeneral(callPtr, MODULE_HANDLE_SET_SHOCKWAVE_3D_ASSET_XTRA));
 	}
@@ -884,7 +884,7 @@ MoaError setupExtender(MoaMmSymbol methodSelector, HANDLE currentProcess, MODULE
 			moduleHandleWrittenCodeReturnAddressBugfixShockwave3DBadDriverList = (HANDLE)((DWORD)moduleHandle + (DWORD)WRITTEN_CODE_RETURN_ADDRESS_BUGFIX_SHOCKWAVE_3D_BAD_DRIVER_LIST_85);
 			moduleHandleWrittenCodeReturnAddressBugfixShockwave3DBadDriverList2 = (HANDLE)((DWORD)moduleHandle + (DWORD)WRITTEN_CODE_RETURN_ADDRESS_BUGFIX_SHOCKWAVE_3D_BAD_DRIVER_LIST_85_2);
 			switch (methodSelector) {
-				case m_BugfixShockwave3DBadDriverList:
+				case m_bugfixShockwave3DBadDriverList:
 				writeSet = textSection->write(writtenBugfixShockwave3DBadDriverList85, WRITTEN_ADDRESS_BUGFIX_SHOCKWAVE_3D_BAD_DRIVER_LIST_85);
 				writeSet = textSection->write(writtenBugfixShockwave3DBadDriverList852, WRITTEN_ADDRESS_BUGFIX_SHOCKWAVE_3D_BAD_DRIVER_LIST_85_2);
 			}
@@ -893,7 +893,7 @@ MoaError setupExtender(MoaMmSymbol methodSelector, HANDLE currentProcess, MODULE
 			moduleHandleWrittenCodeReturnAddressBugfixShockwave3DBadDriverList = (HANDLE)((DWORD)moduleHandle + (DWORD)WRITTEN_CODE_RETURN_ADDRESS_BUGFIX_SHOCKWAVE_3D_BAD_DRIVER_LIST_10);
 			moduleHandleWrittenCodeReturnAddressBugfixShockwave3DBadDriverList2 = (HANDLE)((DWORD)moduleHandle + (DWORD)WRITTEN_CODE_RETURN_ADDRESS_BUGFIX_SHOCKWAVE_3D_BAD_DRIVER_LIST_10_2);
 			switch (methodSelector) {
-				case m_BugfixShockwave3DBadDriverList:
+				case m_bugfixShockwave3DBadDriverList:
 				writeSet = textSection->write(writtenBugfixShockwave3DBadDriverList10, WRITTEN_ADDRESS_BUGFIX_SHOCKWAVE_3D_BAD_DRIVER_LIST_10);
 				writeSet = textSection->write(writtenBugfixShockwave3DBadDriverList102, WRITTEN_ADDRESS_BUGFIX_SHOCKWAVE_3D_BAD_DRIVER_LIST_10_2);
 			}
@@ -902,7 +902,7 @@ MoaError setupExtender(MoaMmSymbol methodSelector, HANDLE currentProcess, MODULE
 			moduleHandleWrittenCodeReturnAddressBugfixShockwave3DBadDriverList = (HANDLE)((DWORD)moduleHandle + (DWORD)WRITTEN_CODE_RETURN_ADDRESS_BUGFIX_SHOCKWAVE_3D_BAD_DRIVER_LIST_115);
 			moduleHandleWrittenCodeReturnAddressBugfixShockwave3DBadDriverList2 = (HANDLE)((DWORD)moduleHandle + (DWORD)WRITTEN_CODE_RETURN_ADDRESS_BUGFIX_SHOCKWAVE_3D_BAD_DRIVER_LIST_115_2);
 			switch (methodSelector) {
-				case m_BugfixShockwave3DBadDriverList:
+				case m_bugfixShockwave3DBadDriverList:
 				writeSet = textSection->write(writtenBugfixShockwave3DBadDriverList115, WRITTEN_ADDRESS_BUGFIX_SHOCKWAVE_3D_BAD_DRIVER_LIST_115);
 				writeSet = textSection->write(writtenBugfixShockwave3DBadDriverList1152, WRITTEN_ADDRESS_BUGFIX_SHOCKWAVE_3D_BAD_DRIVER_LIST_115_2);
 			}

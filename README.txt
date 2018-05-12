@@ -23,7 +23,7 @@ Usage:
 		setExternalParam("sw2", "121220")
 		disableGoToNetMovie()
 		disableGoToNetPage()
-		BugfixShockwave3DBadDriverList()
+		bugfixShockwave3DBadDriverList()
 		go(1, "metalmayhemworldtour.dcr")
 	end
 
@@ -41,4 +41,4 @@ Usage:
 	* disableGoToNetMovie -- disables goToNetMovie
 	* disableGoToNetPage -- disables goToNetPage
  	-- Bugfix Handlers -- 
-	* BugfixShockwave3DBadDriverList -- fixes Shockwave 3D Bad Driver Bug
+	* bugfixShockwave3DBadDriverList -- fixes Shockwave 3D Bad Driver Bug
