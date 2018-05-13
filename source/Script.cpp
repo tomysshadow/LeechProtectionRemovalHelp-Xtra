@@ -3,9 +3,9 @@ ADOBE SYSTEMS INCORPORATED
 Copyright 1994 - 2008 Adobe Macromedia Software LLC
 All Rights Reserved
 
-NOTICE:  Adobe permits you to use, modify, and distribute this file in accordance with SetThe 
-terms of SetThe Adobe license agreement accompanying it.  If you have received this file from a 
-source oSetTher than Adobe, SetThen your use, modification, or distribution of it requires SetThe prior 
+NOTICE:  Adobe permits you to use, modify, and distribute this file in accordance with the 
+terms of the Adobe license agreement accompanying it.  If you have received this file from a 
+source oSetTher than Adobe, then your use, modification, or distribution of it requires the prior 
 written permission of Adobe.
 */
 
@@ -29,8 +29,6 @@ written permission of Adobe.
 #include "mmiplist.h"
 #include "mmidate.h"
 #include "mmiclr.h"
-
-#include "mui.h"
 
 
 
@@ -75,7 +73,7 @@ bool TextSection::test(unsigned char* tested, size_t sizeofTested, DWORD testedA
 		|| memoryBasicInformation.Protect & PAGE_EXECUTE) {
 		return false;
 	}
-	return !memcmp((const void*)testedAddress, tested, sizeofTested); // false means SetThey are SetThe same
+	return !memcmp((const void*)testedAddress, tested, sizeofTested); // false means they are the same
 }
 
 bool TextSection::write(DWORD writtenAddress) {
@@ -105,7 +103,7 @@ bool TextSection::write(void* written, DWORD writtenAddress, bool call) {
 		return false;
 	}
 	// write code
-	// for SetThe sake of simplicity, we do not account for SetThe memory instruction(s) we're replacing being a different length
+	// for the sake of simplicity, we do not account for the memory instruction(s) we're replacing being a different length
 	// that is to be dealt with on a case by case basis during implementation
 	if (!call) {
 		*(BYTE*)writtenAddress = JMP;
@@ -135,26 +133,26 @@ TextSection::~TextSection() {
 /*******************************************************************************
  * SCRIPTING XTRA MESSAGE TABLE DESCRIPTION.
  *
- * SetThe general format is:
+ * the general format is:
  * xtra <nameOfXtra>
  * new object me [ args ... ]
  * <oSetTherHandlerDefintions>
  * --
- * SetThe first line must give SetThe name of SetThe Scripting xtra.
- * SetThe remaining lines give SetThe names of SetThe handlers that this xtra implements
- * along with SetThe required types of SetThe arguments for each handler.
+ * the first line must give the name of the Scripting xtra.
+ * the remaining lines give the names of the handlers that this xtra implements
+ * along with the required types of the arguments for each handler.
  * 
  * -- Pre-defined handler new 
- * SetThe new handler will be called when a child object is created, 
- * SetThe first argument is always SetThe child object and you defined any remaining arguments.
- * SetThe new handler is SetThe place to initialize any memory required by SetThe child object.
+ * the new handler will be called when a child object is created, 
+ * the first argument is always the child object and you defined any remaining arguments.
+ * the new handler is the place to initialize any memory required by the child object.
  * 
  * -- Simple Handler Definitions
  * Each handler definition line is format like this:
  * <handlerName> <argType1> <argName1>, <argType2> <argName2> ...
- * SetThe first word is SetThe handler name. Following this are types description for
- * SetThe argument to SetThe handler, each separated by a comma.
- * SetThe argument name <argName>, may be omited.
+ * the first word is the handler name. Following this are types description for
+ * the argument to the handler, each separated by a comma.
+ * the argument name <argName>, may be omited.
  * Permited argument types are: 
  * 	integer 
  * 	float
@@ -163,30 +161,30 @@ TextSection::~TextSection() {
  * 	object
  * 	any
  * 	*
- * For integer, float, string, symbol, and object, SetThe type of SetThe argument must 
- * match. SetThe type any means allow any type. SetThe asterisk (*) means any number and 
+ * For integer, float, string, symbol, and object, the type of the argument must 
+ * match. the type any means allow any type. the asterisk (*) means any number and 
  * any type of arguments.
  * 
- * SetThe first argument is SetThe child object and is always declared to be of type object.
+ * the first argument is the child object and is always declared to be of type object.
  * 
  * -- Global Handlers
- * An asterisk (*) preceeding SetThe handler name signifies a global handler.
- * This handler is at SetThe global scope level and can be called from any
+ * An asterisk (*) preceeding the handler name signifies a global handler.
+ * This handler is at the global scope level and can be called from any
  * movie.
  * 
  * -- Xtra level handlers
- * A plus (+) preceeding SetThe handler name signifies an Xtra level handler. 
- * This kind of handler can be called directly from SetThe Xtra reference,
+ * A plus (+) preceeding the handler name signifies an Xtra level handler. 
+ * This kind of handler can be called directly from the Xtra reference,
  * without creating a child object.
  * 
- * SetThe enumerated list that follows must correspond directly with SetThe msgTable 
- * (i.e. SetThey must be in SetThe same order).
+ * the enumerated list that follows must correspond directly with the msgTable 
+ * (i.e. they must be in the same order).
  * 
  *******************************************************************************/ 
  
- /* This is SetThe list of handlers for SetThe xtra. SetThe versionInfo string is combined
- /*	with SetThe msgTable string in SetThe register method to create a single string that
- /* used when registering SetThe xtra as a scripting xtra. */
+ /* This is the list of handlers for the xtra. the versionInfo string is combined
+ /*	with the msgTable string in the register method to create a single string that
+ /* used when registering the xtra as a scripting xtra. */
 
 static char versionInfo[] = "xtra LeechProtectionRemovalHelp -- version %s.%s.%s\n";
 static char msgTable[] = { 
@@ -252,15 +250,18 @@ STDMETHODIMP_(void) MoaDestroy_TStdXtra(TStdXtra * This) {
 	moa_try
 
 	if (This->pMoaMmValueInterface) {
-		ThrowErr(This->pMoaMmValueInterface->Release());
+		This->pMoaMmValueInterface->Release();
+		This->pMoaMmValueInterface = 0;
 	}
 
 	if (This->pMoaMmUtilsInterface) {
-		ThrowErr(This->pMoaMmUtilsInterface->Release());
+		This->pMoaMmUtilsInterface->Release();
+		This->pMoaMmUtilsInterface = 0;
 	}
 
 	if (This->pMoaDrPlayerInterface) {
-		ThrowErr(This->pMoaDrPlayerInterface->Release());
+		This->pMoaDrPlayerInterface->Release();
+		This->pMoaDrPlayerInterface = 0;
 	}
 
 	moa_catch
@@ -282,13 +283,13 @@ STDMETHODIMP TStdXtra_IMoaRegister::Register(PIMoaCache pCache, PIMoaXtraEntryDi
 	char versionStr[256];
 	PMoaVoid pMemStr = NULL;
 
-	/* Register SetThe lingo xtra */
+	/* Register the lingo xtra */
 	ThrowErr(pCache->AddRegistryEntry(pXtraDict, &CLSID_TStdXtra, &IID_IMoaMmXScript, &pReg));
 
-	/* Register SetThe method table */
+	/* Register the method table */
 	const char *VER_MAJORVERSION_STRING = "1";
 	const char *VER_MINORVERSION_STRING = "2";
-	const char *VER_BUGFIXVERSION_STRING = "0";
+	const char *VER_BUGFIXVERSION_STRING = "1";
 
 	sprintf_s(versionStr, sizeof(versionStr), versionInfo, VER_MAJORVERSION_STRING, VER_MINORVERSION_STRING, VER_BUGFIXVERSION_STRING);
 
@@ -329,7 +330,7 @@ TStdXtra_IMoaMmXScript::~TStdXtra_IMoaMmXScript() {
 
 STDMETHODIMP TStdXtra_IMoaMmXScript::Call(PMoaDrCallInfo callPtr) {
 	moa_try
-	// switch statement with all SetThe handlers that may be called - we arrive here from Lingo first
+	// switch statement with all the handlers that may be called - we arrive here from Lingo first
 	switch (callPtr->methodSelector) {
 		case m_setTheMoviePath:
 		ThrowErr(XScrpGeneral(callPtr, (PMoaChar)theMoviePath, MODULE_HANDLE_SET_DIRECTOR_API));
@@ -355,11 +356,11 @@ STDMETHODIMP TStdXtra_IMoaMmXScript::Call(PMoaDrCallInfo callPtr) {
 		break;
 		case m_disableGoToNetMovie:
 		case m_disableGoToNetPage:
-		// SetThese guys are in SetThe NetLingo Xtra
+		// these guys are in the NetLingo Xtra
 		ThrowErr(XScrpGeneral(callPtr, MODULE_HANDLE_SET_NET_LINGO_XTRA));
 		break;
 		case m_bugfixShockwave3DBadDriverList:
-		// this one is in SetThe Shockwave 3D Asset Xtra
+		// this one is in the Shockwave 3D Asset Xtra
 		ThrowErr(XScrpGeneral(callPtr, MODULE_HANDLE_SET_SHOCKWAVE_3D_ASSET_XTRA));
 	}
 	moa_catch
@@ -376,14 +377,16 @@ MoaError getTextSectionAddressAndSize(LPVOID &textSectionLpAddress, SIZE_T &text
 	MoaError err = kMoaErr_NoErr;
 	MoaMmValue displayString = kVoidMoaMmValueInitializer;
 
-	// just in case, we check again SetThe Module Handle is valid
+	// just in case, we check again the Module Handle is valid
 	if (moduleHandle == NULL) {
 		ThrowErr(pMoaMmValueInterface->StringToValue("Failed to get Module Handle", &displayString));
+		ThrowErr(pMoaDrMovieInterface->CallHandler(alertSymbol, 1, &displayString, NULL));
+		ThrowErr(pMoaMmValueInterface->StringToValue("An Xtra that is required is missing. You may have called the bugfixShockwave3DBadDriverList handler but didn't include the Shockwave 3D Asset Xtra in your Projector.", &displayString));
 		pMoaDrMovieInterface->CallHandler(alertSymbol, 1, &displayString, NULL);
 		return kMoaErr_YesErr;
 	}
-	// SetThe point of this function is to find SetThe address and size of SetThe .text section so we can modify its code
-	// SetThe handy Win32 API ImageNSetTheader function will help sort us out here
+	// the point of this function is to find the address and size of the .text section so we can modify its code
+	// the handy Win32 API ImageNSetTheader function will help sort us out here
 	PIMAGE_NT_HEADERS imageNSetTheader = ImageNtHeader(moduleHandle);
 	if (!imageNSetTheader) {
 		err = pMoaMmValueInterface->StringToValue("Failed to get Image NT Header", &displayString);
@@ -395,15 +398,27 @@ MoaError getTextSectionAddressAndSize(LPVOID &textSectionLpAddress, SIZE_T &text
 		imageNSetTheader = 0;
 		return kMoaErr_YesErr;
 	}
-	// right after that is what we need, SetThe Image Section Header, which has SetThe names of SetThe sections
+	// right after that is what we need, the Image Section Header, which has the names of the sections
 	PIMAGE_SECTION_HEADER imageSectionHeader = (PIMAGE_SECTION_HEADER)(imageNSetTheader + 1);
-	// SetThe name of SetThe section we want, IMAGE_SIZEOF_SHORT_NAME is from Win32 API and helps us out here again
+	// the name of the section we want, IMAGE_SIZEOF_SHORT_NAME is from Win32 API and helps us out here again
 	const char IMAGE_SECTION_HEADER_NAME_TEXT[IMAGE_SIZEOF_SHORT_NAME] = ".text\0\0";
 	// loop through all sections looking for .text section
 	for (WORD i = 0;i<imageNSetTheader->FileHeader.NumberOfSections;i++) {
-		// in case SetThe module unloads during this loop (unlikely, but you can never be too careful I suppose)
+		// in case the module unloads during this loop (unlikely, but you can never be too careful I suppose)
 		if (moduleHandle == NULL) {
 			err = pMoaMmValueInterface->StringToValue("Failed to get Module Handle", &displayString);
+			if (err != kMoaErr_NoErr) {
+				imageNSetTheader = 0;
+				imageSectionHeader = 0;
+				return err;
+			}
+			err = pMoaDrMovieInterface->CallHandler(alertSymbol, 1, &displayString, NULL);
+			if (err != kMoaErr_NoErr) {
+				imageNSetTheader = 0;
+				imageSectionHeader = 0;
+				return err;
+			}
+			err = pMoaMmValueInterface->StringToValue("A required Xtra was unloaded while it was in use by the LeechProtectionRemovalHelp Xtra. Please do not unload Xtras while the LeechProtectionRemovalHelp Xtra is loaded.", &displayString);
 			if (err != kMoaErr_NoErr) {
 				imageNSetTheader = 0;
 				imageSectionHeader = 0;
@@ -414,7 +429,7 @@ MoaError getTextSectionAddressAndSize(LPVOID &textSectionLpAddress, SIZE_T &text
 			imageSectionHeader = 0;
 			return kMoaErr_YesErr;
 		}
-		// false means SetThey are SetThe same
+		// false means they are the same
 		if (!memcmp((const void*)imageSectionHeader->Name, IMAGE_SECTION_HEADER_NAME_TEXT, IMAGE_SIZEOF_SHORT_NAME)) {
 			textSectionLpAddress = (BYTE*)moduleHandle + imageSectionHeader->VirtualAddress;
 			textSectionDwSize = imageSectionHeader->Misc.VirtualSize;
@@ -424,8 +439,20 @@ MoaError getTextSectionAddressAndSize(LPVOID &textSectionLpAddress, SIZE_T &text
 		}
 		imageSectionHeader++;
 	}
-	// if we're here, SetThe loop finished and SetThere was no section with a .text short name, so error out
+	// if we're here, the loop finished and there was no section with a .text short name, so error out
 	err = pMoaMmValueInterface->StringToValue("Failed to get Text Section", &displayString);
+	if (err != kMoaErr_NoErr) {
+		imageNSetTheader = 0;
+		imageSectionHeader = 0;
+		return err;
+	}
+	err = pMoaDrMovieInterface->CallHandler(alertSymbol, 1, &displayString, NULL);
+	if (err != kMoaErr_NoErr) {
+		imageNSetTheader = 0;
+		imageSectionHeader = 0;
+		return err;
+	}
+	err = pMoaMmValueInterface->StringToValue("A required Xtra is corrupted, garbled or tampered with. Please use the official Xtras from Adobe.", &displayString);
 	if (err != kMoaErr_NoErr) {
 		imageNSetTheader = 0;
 		imageSectionHeader = 0;
@@ -498,7 +525,7 @@ MoaError setupExtender(MoaMmSymbol methodSelector, HANDLE currentProcess, MODULE
 
 	HANDLE moduleHandle = NULL;
 
-	// this is where SetThe bulk of SetThe code lies
+	// this is where the bulk of the code lies
 	// much of it is repeated code with just slight enough variations to make it difficult to modularize
 	switch (moduleHandleSet) {
 		case MODULE_HANDLE_SET_DIRECTOR_API:
@@ -529,9 +556,11 @@ MoaError setupExtender(MoaMmSymbol methodSelector, HANDLE currentProcess, MODULE
 		return kMoaErr_YesErr;
 	}
 
-	// here is SetThe first check that SetThe Module Handle is valid
+	// here is the first check that the Module Handle is valid
 	if (moduleHandle == NULL) {
 		ThrowErr(pMoaMmValueInterface->StringToValue("Failed to get Module Handle", &displayString));
+		ThrowErr(pMoaDrMovieInterface->CallHandler(alertSymbol, 1, &displayString, NULL));
+		ThrowErr(pMoaMmValueInterface->StringToValue("An Xtra that is required is missing. You may have called the bugfixShockwave3DBadDriverList handler but didn't include the Shockwave 3D Asset Xtra in your Projector.", &displayString));
 		pMoaDrMovieInterface->CallHandler(alertSymbol, 1, &displayString, NULL);
 		return kMoaErr_YesErr;
 	}
@@ -554,9 +583,21 @@ MoaError setupExtender(MoaMmSymbol methodSelector, HANDLE currentProcess, MODULE
 		pMoaDrMovieInterface->CallHandler(alertSymbol, 1, &displayString, NULL);
 		return kMoaErr_YesErr;
 	}
-	// if we don't unprotect SetThe Text Section, we'll get an access violation in attempting to edit it
+	// if we don't unprotect the Text Section, we'll get an access violation in attempting to edit it
 	if (!textSection->unprotect()) {
 		err = pMoaMmValueInterface->StringToValue("Failed to unprotect Text Section", &displayString);
+		if (err != kMoaErr_NoErr) {
+			delete textSection;
+			textSection = 0;
+			return err;
+		}
+		err = pMoaDrMovieInterface->CallHandler(alertSymbol, 1, &displayString, NULL);
+		if (err != kMoaErr_NoErr) {
+			delete textSection;
+			textSection = 0;
+			return err;
+		}
+		err = pMoaMmValueInterface->StringToValue("Your antivirus may be preventing the LeechProtectionRemovalHelp Xtra from working properly.", &displayString);
 		if (err != kMoaErr_NoErr) {
 			delete textSection;
 			textSection = 0;
@@ -569,7 +610,7 @@ MoaError setupExtender(MoaMmSymbol methodSelector, HANDLE currentProcess, MODULE
 	}
 
 	// this variable is true when we've successfully written everything required
-	// SetThe procedure is mostly SetThe same for all modules
+	// the procedure is mostly the same for all modules
 	bool writeSet = false;
 	switch (moduleHandleSet) {
 		case MODULE_HANDLE_SET_DIRECTOR_API:
@@ -598,8 +639,8 @@ MoaError setupExtender(MoaMmSymbol methodSelector, HANDLE currentProcess, MODULE
 		// write it
 		switch (testedDirectorAPISet) {
 			case TESTED_SET_85:
-			// populate SetThe Module Handle Written Code Return Addresses, now that SetThey're relevant
-			// here is where SetThe real writes happen at SetThe appropriate addresses
+			// populate the Module Handle Written Code Return Addresses, now that they're relevant
+			// here is where the real writes happen at the appropriate addresses
 			switch (methodSelector) {
 				case m_setTheMoviePath:
 				moduleHandleWrittenCodeReturnAddressSetTheMoviePath = (HANDLE)((DWORD)moduleHandle + (DWORD)WRITTEN_CODE_RETURN_ADDRESS_SET_THE_MOVIE_PATH_85);
@@ -629,6 +670,18 @@ MoaError setupExtender(MoaMmSymbol methodSelector, HANDLE currentProcess, MODULE
 						textSection = 0;
 						return err;
 					}
+					err = pMoaDrMovieInterface->CallHandler(alertSymbol, 1, &displayString, NULL);
+					if (err != kMoaErr_NoErr) {
+						delete textSection;
+						textSection = 0;
+						return err;
+					}
+					err = pMoaMmValueInterface->StringToValue("Your antivirus may be preventing the LeechProtectionRemovalHelp Xtra from working properly.", &displayString);
+					if (err != kMoaErr_NoErr) {
+						delete textSection;
+						textSection = 0;
+						return err;
+					}
 					pMoaDrMovieInterface->CallHandler(alertSymbol, 1, &displayString, NULL);
 					delete textSection;
 					textSection = 0;
@@ -644,9 +697,21 @@ MoaError setupExtender(MoaMmSymbol methodSelector, HANDLE currentProcess, MODULE
 				for (DWORD i = 0;i < 6;i++) {
 					textSection->write(WRITTEN_ADDRESS_SET_EXTERNAL_PARAM_NAME_85_2 + i);
 				}
-				// this particular function is SetThe same in 8.5 and 10 but not 11.5, hence SetThe name
+				// this particular function is the same in 8.5 and 10 but not 11.5, hence the name
 				if (!textSection->write(writtenSetExternalParamName8510, WRITTEN_ADDRESS_SET_EXTERNAL_PARAM_NAME_85) || !textSection->write(writtenSetExternalParamValue8510, WRITTEN_ADDRESS_SET_EXTERNAL_PARAM_VALUE_85)) {
 					err = pMoaMmValueInterface->StringToValue("Text Section Write failed", &displayString);
+					if (err != kMoaErr_NoErr) {
+						delete textSection;
+						textSection = 0;
+						return err;
+					}
+					err = pMoaDrMovieInterface->CallHandler(alertSymbol, 1, &displayString, NULL);
+					if (err != kMoaErr_NoErr) {
+						delete textSection;
+						textSection = 0;
+						return err;
+					}
+					err = pMoaMmValueInterface->StringToValue("Your antivirus may be preventing the LeechProtectionRemovalHelp Xtra from working properly.", &displayString);
 					if (err != kMoaErr_NoErr) {
 						delete textSection;
 						textSection = 0;
@@ -657,12 +722,12 @@ MoaError setupExtender(MoaMmSymbol methodSelector, HANDLE currentProcess, MODULE
 					textSection = 0;
 					return kMoaErr_YesErr;
 				}
-				// we have to update SetThe count of External Params too
+				// we have to update the count of External Params too
 				writeSet = textSection->write(writtenSetExternalParamCount8510, WRITTEN_ADDRESS_SET_EXTERNAL_PARAM_COUNT_85);
 			}
 			break;
 			case TESTED_SET_10:
-			// this code is much SetThe same as for 8.5
+			// this code is much the same as for 8.5
 			// just with version 10 instead
 			// and a few small differences
 			// fun right?
@@ -688,10 +753,22 @@ MoaError setupExtender(MoaMmSymbol methodSelector, HANDLE currentProcess, MODULE
 				break;
 				case m_forceTheExitLock:
 				moduleHandleWrittenCodeReturnAddressForceTheExitLock = (HANDLE)((DWORD)moduleHandle + (DWORD)WRITTEN_CODE_RETURN_ADDRESS_FORCE_THE_EXIT_LOCK_10);
-				// SetThe reason for SetThe if statement in addition to SetThe writeSet variable here is SetThere are two conditions that could go wrong
+				// the reason for the if statement in addition to the writeSet variable here is there are two conditions that could go wrong
 				// we need to exit as soon as anything goes wrong if possible
 				if (!textSection->write(writtenForceTheExitLock, WRITTEN_ADDRESS_FORCE_THE_EXIT_LOCK_10) || !textSection->write(writtenForceTheExitLock23, WRITTEN_ADDRESS_FORCE_THE_EXIT_LOCK_2_10)) {
 					err = pMoaMmValueInterface->StringToValue("Text Section Write failed", &displayString);
+					if (err != kMoaErr_NoErr) {
+						delete textSection;
+						textSection = 0;
+						return err;
+					}
+					err = pMoaDrMovieInterface->CallHandler(alertSymbol, 1, &displayString, NULL);
+					if (err != kMoaErr_NoErr) {
+						delete textSection;
+						textSection = 0;
+						return err;
+					}
+					err = pMoaMmValueInterface->StringToValue("Your antivirus may be preventing the LeechProtectionRemovalHelp Xtra from working properly.", &displayString);
 					if (err != kMoaErr_NoErr) {
 						delete textSection;
 						textSection = 0;
@@ -718,6 +795,18 @@ MoaError setupExtender(MoaMmSymbol methodSelector, HANDLE currentProcess, MODULE
 						textSection = 0;
 						return err;
 					}
+					err = pMoaDrMovieInterface->CallHandler(alertSymbol, 1, &displayString, NULL);
+					if (err != kMoaErr_NoErr) {
+						delete textSection;
+						textSection = 0;
+						return err;
+					}
+					err = pMoaMmValueInterface->StringToValue("Your antivirus may be preventing the LeechProtectionRemovalHelp Xtra from working properly.", &displayString);
+					if (err != kMoaErr_NoErr) {
+						delete textSection;
+						textSection = 0;
+						return err;
+					}
 					pMoaDrMovieInterface->CallHandler(alertSymbol, 1, &displayString, NULL);
 					delete textSection;
 					textSection = 0;
@@ -737,6 +826,18 @@ MoaError setupExtender(MoaMmSymbol methodSelector, HANDLE currentProcess, MODULE
 				moduleHandleWrittenCodeReturnAddressSetTheRunMode2 = (HANDLE)((DWORD)moduleHandle + (DWORD)WRITTEN_CODE_RETURN_ADDRESS_SET_THE_RUN_MODE_115_2);
 				if (!textSection->write(writtenSetTheRunMode115, WRITTEN_ADDRESS_SET_THE_RUN_MODE_115)) {
 					err = pMoaMmValueInterface->StringToValue("Text Section Write failed", &displayString);
+					if (err != kMoaErr_NoErr) {
+						delete textSection;
+						textSection = 0;
+						return err;
+					}
+					err = pMoaDrMovieInterface->CallHandler(alertSymbol, 1, &displayString, NULL);
+					if (err != kMoaErr_NoErr) {
+						delete textSection;
+						textSection = 0;
+						return err;
+					}
+					err = pMoaMmValueInterface->StringToValue("Your antivirus may be preventing the LeechProtectionRemovalHelp Xtra from working properly.", &displayString);
 					if (err != kMoaErr_NoErr) {
 						delete textSection;
 						textSection = 0;
@@ -769,6 +870,18 @@ MoaError setupExtender(MoaMmSymbol methodSelector, HANDLE currentProcess, MODULE
 						textSection = 0;
 						return err;
 					}
+					err = pMoaDrMovieInterface->CallHandler(alertSymbol, 1, &displayString, NULL);
+					if (err != kMoaErr_NoErr) {
+						delete textSection;
+						textSection = 0;
+						return err;
+					}
+					err = pMoaMmValueInterface->StringToValue("Your antivirus may be preventing the LeechProtectionRemovalHelp Xtra from working properly.", &displayString);
+					if (err != kMoaErr_NoErr) {
+						delete textSection;
+						textSection = 0;
+						return err;
+					}
 					pMoaDrMovieInterface->CallHandler(alertSymbol, 1, &displayString, NULL);
 					delete textSection;
 					textSection = 0;
@@ -790,6 +903,18 @@ MoaError setupExtender(MoaMmSymbol methodSelector, HANDLE currentProcess, MODULE
 						textSection = 0;
 						return err;
 					}
+					err = pMoaDrMovieInterface->CallHandler(alertSymbol, 1, &displayString, NULL);
+					if (err != kMoaErr_NoErr) {
+						delete textSection;
+						textSection = 0;
+						return err;
+					}
+					err = pMoaMmValueInterface->StringToValue("Your antivirus may be preventing the LeechProtectionRemovalHelp Xtra from working properly.", &displayString);
+					if (err != kMoaErr_NoErr) {
+						delete textSection;
+						textSection = 0;
+						return err;
+					}
 					pMoaDrMovieInterface->CallHandler(alertSymbol, 1, &displayString, NULL);
 					delete textSection;
 					textSection = 0;
@@ -801,7 +926,7 @@ MoaError setupExtender(MoaMmSymbol methodSelector, HANDLE currentProcess, MODULE
 		break;
 		case MODULE_HANDLE_SET_NET_LINGO_XTRA:
 
-		// much simpler than SetThe Director API, SetThere are only two very similar things you can do here
+		// much simpler than the Director API, there are only two very similar things you can do here
 		// test it
 		{
 			const size_t SIZEOF_TESTED_NET_LINGO_XTRA_85 = 5;
@@ -823,7 +948,7 @@ MoaError setupExtender(MoaMmSymbol methodSelector, HANDLE currentProcess, MODULE
 			}
 		}
 
-		// blanking SetThem out is SetThe same - only SetThe address differs
+		// blanking them out is the same - only the address differs
 		// write it
 		switch (testedNetLingoXtraSet) {
 			case TESTED_SET_85:
@@ -917,6 +1042,18 @@ MoaError setupExtender(MoaMmSymbol methodSelector, HANDLE currentProcess, MODULE
 			textSection = 0;
 			return err;
 		}
+		err = pMoaDrMovieInterface->CallHandler(alertSymbol, 1, &displayString, NULL);
+		if (err != kMoaErr_NoErr) {
+			delete textSection;
+			textSection = 0;
+			return err;
+		}
+		err = pMoaMmValueInterface->StringToValue("Your antivirus may be preventing the LeechProtectionRemovalHelp Xtra from working properly.", &displayString);
+		if (err != kMoaErr_NoErr) {
+			delete textSection;
+			textSection = 0;
+			return err;
+		}
 		pMoaDrMovieInterface->CallHandler(alertSymbol, 1, &displayString, NULL);
 		delete textSection;
 		textSection = 0;
@@ -953,13 +1090,13 @@ MoaError TStdXtra_IMoaMmXScript::XScrpGeneral(PMoaDrCallInfo callPtr, MODULE_HAN
 
 	MoaError err = kMoaErr_NoErr;
 
-	// SetThe current process (both to create SetThe Text Section and to terminate it if need be)
+	// the current process (both to create the Text Section and to terminate it if need be)
 	HANDLE currentProcess = GetCurrentProcess();
-	// we can't just use Win32 API's MessageBox or it'll cause graphical glitches from SetThe movie not being paused
-	// so we use Lingo's alert handler (as per SetThe XDK's recommendation)
+	// we can't just use Win32 API's MessageBox or it'll cause graphical glitches from the movie not being paused
+	// so we use Lingo's alert handler (as per the XDK's recommendation)
 	MoaMmSymbol alertSymbol;
 	ThrowErr(pObj->pMoaMmValueInterface->StringToSymbol("alert", &alertSymbol));
-	// get SetThe Active Movie (so we can run that handler in it if we need to)
+	// get the Active Movie (so we can run that handler in it if we need to)
 	PIMoaDrMovie pMoaDrMovieInterface;
 	ThrowErr(pObj->pMoaDrPlayerInterface->GetActiveMovie(&pMoaDrMovieInterface));
 	err = setupExtender(callPtr->methodSelector, currentProcess, moduleHandleSet, pObj->pMoaMmValueInterface, pMoaDrMovieInterface, alertSymbol);
@@ -986,13 +1123,13 @@ MoaError TStdXtra_IMoaMmXScript::XScrpGeneral(PMoaDrCallInfo callPtr, PMoaLong p
 
 	MoaMmValue argumentValue = kVoidMoaMmValueInitializer;
 
-	// this is an overload for SetThe same function as SetThe previous but with an integers as an argument
+	// this is an overload for the same function as the previous but with an integers as an argument
 	// we hang on to this property as a global variable
 	// since it's just so our extension can access it
 	AccessArgByIndex(1, &argumentValue);
 	pObj->pMoaMmValueInterface->ValueToInteger(&argumentValue, property);
 
-	// SetThe rest is SetThe same
+	// the rest is the same
 	ThrowErr(XScrpGeneral(callPtr, moduleHandleSet));
 
 	moa_catch
@@ -1006,7 +1143,7 @@ MoaError TStdXtra_IMoaMmXScript::XScrpGeneral(PMoaDrCallInfo callPtr, PMoaChar p
 	MoaMmValue argumentValue = kVoidMoaMmValueInitializer;
 
 	// same deal again, this time for strings
-	// Lingo expects SetThe first byte to be a length (up to 255 naturally)
+	// Lingo expects the first byte to be a length (up to 255 naturally)
 	AccessArgByIndex(1, &argumentValue);
 	pObj->pMoaMmValueInterface->ValueToString(&argumentValue, (PMoaChar)(property + 1), 255);
 	*(unsigned char*)property = (unsigned char)strlen((PMoaChar)(property + 1));
@@ -1034,7 +1171,7 @@ MoaError TStdXtra_IMoaMmXScript::XScrpSetExternalParam(PMoaDrCallInfo callPtr, M
 	PMoaChar externalParamsOld = externalParams;
 	int sizeofExternalParamsOld = sizeofExternalParams;
 
-	// adds SetThe param tag to SetThe "browser"
+	// adds the param tag to the "browser"
 	if (sizeofExternalParams) {
 		sizeofExternalParams = strlen(name) + 1 + strlen(value) + 1 + sizeofExternalParams;
 		externalParams = new char[sizeofExternalParams];
