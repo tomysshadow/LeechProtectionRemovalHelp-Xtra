@@ -2,8 +2,12 @@
 <Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
+    <LocalDebuggerCommand>C:\Users\Anthony\Games\Adobe Director\Director 11.5\Director.exe</LocalDebuggerCommand>
+    <LocalDebuggerWorkingDirectory>C:\Users\Anthony\Games\Adobe Director\Director 11.5\</LocalDebuggerWorkingDirectory>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
+    <LocalDebuggerCommand>C:\Users\Anthony\Games\Adobe Director\Director 11.5\Director.exe</LocalDebuggerCommand>
+    <LocalDebuggerWorkingDirectory>C:\Users\Anthony\Games\Adobe Director\Director 11.5\</LocalDebuggerWorkingDirectory>
   </PropertyGroup>
 </Project>

@@ -725,7 +725,7 @@ __declspec(naked) void writtenSetThePlatform115() {
 	__asm {
 		// check we're in a Lingo script
 		push eax
-		mov eax, [esp + 464h] // the return address of the subroutine we're currently in
+		mov eax, [esp + 0464h] // the return address of the subroutine we're currently in
 		sub eax, moduleHandleDirectorAPI // regardless of where the module is loaded
 		cmp eax, 00112FDDh // the address of Lingo's code in 11.5
 		pop eax
@@ -902,7 +902,7 @@ __declspec(naked) void writtenBugfixShockwave3DBadDriverList115() {
 
 __declspec(naked) void writtenBugfixShockwave3DBadDriverList1152() {
 	__asm {
-		push 104h
+		push 0104h
 		push ebx
 		mov [ebp - 14h], ebx
 		mov [ebp - 1Ch], edi

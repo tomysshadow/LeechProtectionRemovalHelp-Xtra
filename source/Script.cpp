@@ -386,46 +386,46 @@ MoaError getTextSectionAddressAndSize(LPVOID &textSectionLpAddress, SIZE_T &text
 		return kMoaErr_YesErr;
 	}
 	// the point of this function is to find the address and size of the .text section so we can modify its code
-	// the handy Win32 API ImageNSetTheader function will help sort us out here
-	PIMAGE_NT_HEADERS imageNSetTheader = ImageNtHeader(moduleHandle);
-	if (!imageNSetTheader) {
+	// the handy Win32 API ImageNTHeader function will help sort us out here
+	PIMAGE_NT_HEADERS imageNtHeader = ImageNtHeader(moduleHandle);
+	if (!imageNtHeader) {
 		err = pMoaMmValueInterface->StringToValue("Failed to get Image NT Header", &displayString);
 		if (err != kMoaErr_NoErr) {
-			imageNSetTheader = 0;
+			imageNtHeader = 0;
 			return err;
 		}
 		pMoaDrMovieInterface->CallHandler(alertSymbol, 1, &displayString, NULL);
-		imageNSetTheader = 0;
+		imageNtHeader = 0;
 		return kMoaErr_YesErr;
 	}
 	// right after that is what we need, the Image Section Header, which has the names of the sections
-	PIMAGE_SECTION_HEADER imageSectionHeader = (PIMAGE_SECTION_HEADER)(imageNSetTheader + 1);
+	PIMAGE_SECTION_HEADER imageSectionHeader = (PIMAGE_SECTION_HEADER)(imageNtHeader + 1);
 	// the name of the section we want, IMAGE_SIZEOF_SHORT_NAME is from Win32 API and helps us out here again
 	const char IMAGE_SECTION_HEADER_NAME_TEXT[IMAGE_SIZEOF_SHORT_NAME] = ".text\0\0";
 	// loop through all sections looking for .text section
-	for (WORD i = 0;i<imageNSetTheader->FileHeader.NumberOfSections;i++) {
+	for (WORD i = 0;i<imageNtHeader->FileHeader.NumberOfSections;i++) {
 		// in case the module unloads during this loop (unlikely, but you can never be too careful I suppose)
 		if (moduleHandle == NULL) {
 			err = pMoaMmValueInterface->StringToValue("Failed to get Module Handle", &displayString);
 			if (err != kMoaErr_NoErr) {
-				imageNSetTheader = 0;
+				imageNtHeader = 0;
 				imageSectionHeader = 0;
 				return err;
 			}
 			err = pMoaDrMovieInterface->CallHandler(alertSymbol, 1, &displayString, NULL);
 			if (err != kMoaErr_NoErr) {
-				imageNSetTheader = 0;
+				imageNtHeader = 0;
 				imageSectionHeader = 0;
 				return err;
 			}
 			err = pMoaMmValueInterface->StringToValue("A required Xtra was unloaded while it was in use by the LeechProtectionRemovalHelp Xtra. Please do not unload Xtras while the LeechProtectionRemovalHelp Xtra is loaded.", &displayString);
 			if (err != kMoaErr_NoErr) {
-				imageNSetTheader = 0;
+				imageNtHeader = 0;
 				imageSectionHeader = 0;
 				return err;
 			}
 			pMoaDrMovieInterface->CallHandler(alertSymbol, 1, &displayString, NULL);
-			imageNSetTheader = 0;
+			imageNtHeader = 0;
 			imageSectionHeader = 0;
 			return kMoaErr_YesErr;
 		}
@@ -433,7 +433,7 @@ MoaError getTextSectionAddressAndSize(LPVOID &textSectionLpAddress, SIZE_T &text
 		if (!memcmp((const void*)imageSectionHeader->Name, IMAGE_SECTION_HEADER_NAME_TEXT, IMAGE_SIZEOF_SHORT_NAME)) {
 			textSectionLpAddress = (BYTE*)moduleHandle + imageSectionHeader->VirtualAddress;
 			textSectionDwSize = imageSectionHeader->Misc.VirtualSize;
-			imageNSetTheader = 0;
+			imageNtHeader = 0;
 			imageSectionHeader = 0;
 			return kMoaErr_NoErr;
 		}
@@ -442,24 +442,24 @@ MoaError getTextSectionAddressAndSize(LPVOID &textSectionLpAddress, SIZE_T &text
 	// if we're here, the loop finished and there was no section with a .text short name, so error out
 	err = pMoaMmValueInterface->StringToValue("Failed to get Text Section", &displayString);
 	if (err != kMoaErr_NoErr) {
-		imageNSetTheader = 0;
+		imageNtHeader = 0;
 		imageSectionHeader = 0;
 		return err;
 	}
 	err = pMoaDrMovieInterface->CallHandler(alertSymbol, 1, &displayString, NULL);
 	if (err != kMoaErr_NoErr) {
-		imageNSetTheader = 0;
+		imageNtHeader = 0;
 		imageSectionHeader = 0;
 		return err;
 	}
 	err = pMoaMmValueInterface->StringToValue("A required Xtra is corrupted, garbled or tampered with. Please use the official Xtras from Adobe.", &displayString);
 	if (err != kMoaErr_NoErr) {
-		imageNSetTheader = 0;
+		imageNtHeader = 0;
 		imageSectionHeader = 0;
 		return err;
 	}
 	pMoaDrMovieInterface->CallHandler(alertSymbol, 1, &displayString, NULL);
-	imageNSetTheader = 0;
+	imageNtHeader = 0;
 	imageSectionHeader = 0;
 	return kMoaErr_YesErr;
 
@@ -1094,16 +1094,17 @@ MoaError TStdXtra_IMoaMmXScript::XScrpGeneral(PMoaDrCallInfo callPtr, MODULE_HAN
 	HANDLE currentProcess = GetCurrentProcess();
 	// we can't just use Win32 API's MessageBox or it'll cause graphical glitches from the movie not being paused
 	// so we use Lingo's alert handler (as per the XDK's recommendation)
-	MoaMmSymbol alertSymbol;
-	ThrowErr(pObj->pMoaMmValueInterface->StringToSymbol("alert", &alertSymbol));
+	MoaMmSymbol alertSymbol = 559;
+	MoaChar alertChar[256];
+	ThrowErr(pObj->pMoaMmValueInterface->SymbolToString(alertSymbol, alertChar, 255));
 	// get the Active Movie (so we can run that handler in it if we need to)
 	PIMoaDrMovie pMoaDrMovieInterface;
 	ThrowErr(pObj->pMoaDrPlayerInterface->GetActiveMovie(&pMoaDrMovieInterface));
-	err = setupExtender(callPtr->methodSelector, currentProcess, moduleHandleSet, pObj->pMoaMmValueInterface, pMoaDrMovieInterface, alertSymbol);
-	if (err != kMoaErr_NoErr) {
-		TerminateProcess(currentProcess, err);
-		return err;
-	}
+	//err = setupExtender(callPtr->methodSelector, currentProcess, moduleHandleSet, pObj->pMoaMmValueInterface, pMoaDrMovieInterface, alertSymbol);
+	//if (err != kMoaErr_NoErr) {
+		//TerminateProcess(currentProcess, err);
+		//return err;
+	//}
 
 	// don't forget to brush your teeth
 	if (pMoaDrMovieInterface) {
