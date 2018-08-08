@@ -1094,17 +1094,16 @@ MoaError TStdXtra_IMoaMmXScript::XScrpGeneral(PMoaDrCallInfo callPtr, MODULE_HAN
 	HANDLE currentProcess = GetCurrentProcess();
 	// we can't just use Win32 API's MessageBox or it'll cause graphical glitches from the movie not being paused
 	// so we use Lingo's alert handler (as per the XDK's recommendation)
-	MoaMmSymbol alertSymbol = 559;
-	MoaChar alertChar[256];
-	ThrowErr(pObj->pMoaMmValueInterface->SymbolToString(alertSymbol, alertChar, 255));
+	MoaMmSymbol alertSymbol;
+	ThrowErr(pObj->pMoaMmValueInterface->StringToSymbol("alert", &alertSymbol));
 	// get the Active Movie (so we can run that handler in it if we need to)
 	PIMoaDrMovie pMoaDrMovieInterface;
 	ThrowErr(pObj->pMoaDrPlayerInterface->GetActiveMovie(&pMoaDrMovieInterface));
-	//err = setupExtender(callPtr->methodSelector, currentProcess, moduleHandleSet, pObj->pMoaMmValueInterface, pMoaDrMovieInterface, alertSymbol);
-	//if (err != kMoaErr_NoErr) {
-		//TerminateProcess(currentProcess, err);
-		//return err;
-	//}
+	err = setupExtender(callPtr->methodSelector, currentProcess, moduleHandleSet, pObj->pMoaMmValueInterface, pMoaDrMovieInterface, alertSymbol);
+	if (err != kMoaErr_NoErr) {
+		TerminateProcess(currentProcess, err);
+		return err;
+	}
 
 	// don't forget to brush your teeth
 	if (pMoaDrMovieInterface) {
