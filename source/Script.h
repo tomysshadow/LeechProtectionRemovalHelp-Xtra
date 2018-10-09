@@ -15,6 +15,9 @@ written permission of Adobe.
 #define _H_Script
 
 #include <windows.h>
+#include <Dbghelp.h>
+#include <string.h>
+
 #include "moastdif.h"
 #include "xmmvalue.h"
 #include "mmiutil.h"
@@ -22,7 +25,27 @@ written permission of Adobe.
 
 
 
-#define kMoaErr_YesErr ((MoaError)1L)
+enum MODULE {
+	MODULE_DIRECTOR_API,
+	MODULE_NET_LINGO_XTRA,
+	MODULE_SHOCKWAVE_3D_ASSET_XTRA
+};
+
+enum MODULE_DIRECTOR_VERSION {
+	MODULE_DIRECTOR_INCOMPATIBLE = -1,
+	MODULE_DIRECTOR_8,
+	MODULE_DIRECTOR_85,
+	MODULE_DIRECTOR_851,
+	MODULE_DIRECTOR_9,
+	MODULE_DIRECTOR_10,
+	MODULE_DIRECTOR_101,
+	MODULE_DIRECTOR_11,
+	MODULE_DIRECTOR_1103,
+	MODULE_DIRECTOR_115,
+	MODULE_DIRECTOR_1158,
+	MODULE_DIRECTOR_1159,
+	MODULE_DIRECTOR_12
+};
 
 
 
@@ -31,883 +54,372 @@ written permission of Adobe.
 DEFINE_GUID(CLSID_TStdXtra,
 			0xef754e9f, 0xbe76, 0x42d3, 0xa7, 0xb2, 0x5b, 0xb7, 0x94, 0x7b, 0x58, 0x12);
 
-
-
-
 EXTERN_BEGIN_DEFINE_CLASS_INSTANCE_VARS(TStdXtra)
 	PIMoaMmUtils2 pMoaMmUtilsInterface;
 	PIMoaMmValue pMoaMmValueInterface;
 	PIMoaDrPlayer pMoaDrPlayerInterface;
 EXTERN_END_DEFINE_CLASS_INSTANCE_VARS
 
-
-
-
 EXTERN_BEGIN_DEFINE_CLASS_INTERFACE(TStdXtra, IMoaRegister)
 	EXTERN_DEFINE_METHOD(MoaError, Register, (PIMoaCache, PIMoaXtraEntryDict))
 EXTERN_END_DEFINE_CLASS_INTERFACE
 
-
-
-
-enum MODULE_HANDLE_SET {
-	MODULE_HANDLE_SET_NULL,
-	MODULE_HANDLE_SET_DIRECTOR_API,
-	MODULE_HANDLE_SET_NET_LINGO_XTRA,
-	MODULE_HANDLE_SET_SHOCKWAVE_3D_ASSET_XTRA
-};
-
-
-
-
 EXTERN_BEGIN_DEFINE_CLASS_INTERFACE(TStdXtra, IMoaMmXScript)
 	EXTERN_DEFINE_METHOD(MoaError, Call, (PMoaDrCallInfo))
 	private:
-	EXTERN_DEFINE_METHOD(MoaError, XScrpGeneral, (PMoaDrCallInfo, MODULE_HANDLE_SET))
-	EXTERN_DEFINE_METHOD(MoaError, XScrpGeneral, (PMoaDrCallInfo, PMoaLong, MODULE_HANDLE_SET))
-	EXTERN_DEFINE_METHOD(MoaError, XScrpGeneral, (PMoaDrCallInfo, PMoaChar, MODULE_HANDLE_SET))
-	EXTERN_DEFINE_METHOD(MoaError, XScrpSetExternalParam, (PMoaDrCallInfo, MODULE_HANDLE_SET))
+	EXTERN_DEFINE_METHOD(MoaError, XScrpExtender, (PMoaDrCallInfo, MODULE, PIMoaDrMovie))
+	EXTERN_DEFINE_METHOD(MoaError, XScrpExtender, (PMoaDrCallInfo, MODULE))
+	EXTERN_DEFINE_METHOD(MoaError, XScrpExtender, (PMoaDrCallInfo, MODULE, PMoaLong))
+	EXTERN_DEFINE_METHOD(MoaError, XScrpExtender, (PMoaDrCallInfo, MODULE, MoaLong, PMoaChar))
+	EXTERN_DEFINE_METHOD(MoaError, XScrpSetExternalParam, (PMoaDrCallInfo, MODULE))
 EXTERN_END_DEFINE_CLASS_INTERFACE
 
 
 
 
-class TextSection {
-	private:
-	LPVOID lpAddress = NULL;
-	SIZE_T dwSize = 0;
-	HANDLE currentProcess = INVALID_HANDLE_VALUE;
-	DWORD lpflOldProtect = NULL;
-	bool lpflOldProtectSet = false;
-	bool flushed = true;
+inline bool stringsEqual(const char* leftHandSide, const char* rightHandSide) {
+	return !strcmp(leftHandSide, rightHandSide);
+}
 
-	public:
-	bool unprotect();
-	bool protect();
-	bool flush();
-	bool test(unsigned char* tested, size_t sizeofTested, DWORD testedAddress);
-	bool write(DWORD writtenAddress);
-	bool write(void* written, DWORD writtenAddress, bool call = false);
-	TextSection(LPVOID lpAddress, SIZE_T dwSize, HANDLE currentProcess);
-	~TextSection();
-};
+inline bool memoryEqual(const void* buffer, const void* buffer2, size_t bufferSize) {
+	return !memcmp(buffer, buffer2, bufferSize);
+}
+
+bool shiftMemory(size_t bufferSize, const void* buffer, size_t sourceSize, const void* source, unsigned int shift, bool direction) {
+	if (source < buffer || (char*)source + sourceSize > (char*)buffer + bufferSize) {
+		return false;
+	}
+	
+	size_t destinationSize = (char*)buffer + bufferSize - source;
+	char* destination = (char*)source;
+	if (!direction) {
+		destination -= shift;
+	} else {
+		destination += shift;
+	}
+	
+	if (destination < buffer || destination + sourceSize > (char*)buffer + bufferSize) {
+		return false;
+	}
+	
+	return !memmove_s(destination, destinationSize, source, sourceSize);
+}
 
 
 
 
-// Set or Force Property Written Addresses for 8.5
-const DWORD WRITTEN_ADDRESS_SET_THE_MOVIE_PATH_85 = 0x000A8597;
-const DWORD WRITTEN_ADDRESS_SET_THE_RUN_MODE_85 = 0x000A8D2F;
-const DWORD WRITTEN_ADDRESS_SET_THE_PLATFORM_85 = 0x000A8CB3;
-const DWORD WRITTEN_ADDRESS_SET_THE_MACHINE_TYPE_85 = 0x000C6E80;
-const DWORD WRITTEN_ADDRESS_SET_THE_ENVIRONMENT_SHOCK_MACHINE_85 = 0x000D2338;
-const DWORD WRITTEN_ADDRESS_FORCE_THE_EXIT_LOCK_85 = 0x0001065E;
-const DWORD WRITTEN_ADDRESS_FORCE_THE_EXIT_LOCK_2_85 = 0x00007462;
-const DWORD WRITTEN_ADDRESS_FORCE_THE_EXIT_LOCK_3_85 = 0x000094AB;
+inline bool callLingoQuit(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterface) {
+	// we can't just use Win32 API's TerminateProcess because it causes a long pause before closing the movie improperly
+	// so we use Lingo's Quit handler
+	MoaError err = kMoaErr_NoErr;
+	MoaMmSymbol quitSymbol;
 
-// Set External Param Written Addresses for 8.5
-const DWORD WRITTEN_ADDRESS_SET_EXTERNAL_PARAM_NAME_85 = 0x000A7F40;
-const DWORD WRITTEN_ADDRESS_SET_EXTERNAL_PARAM_NAME_85_2 = 0x000A7F72;
-const DWORD WRITTEN_ADDRESS_SET_EXTERNAL_PARAM_VALUE_85 = 0x000A804F;
-const DWORD WRITTEN_ADDRESS_SET_EXTERNAL_PARAM_VALUE_85_2 = 0x000A808E;
-const DWORD WRITTEN_ADDRESS_SET_EXTERNAL_PARAM_COUNT_85 = 0x000A7ED9;
-const DWORD WRITTEN_ADDRESS_SET_EXTERNAL_PARAM_COUNT_85_2 = 0x000A7F16;
+	err = pMoaMmValueInterface->StringToSymbol("Quit", &quitSymbol);
+	if (err != kMoaErr_NoErr) {
+		return false;
+	}
+	err = pMoaDrMovieInterface->CallHandler(quitSymbol, 0, NULL, NULL);
+	if (err != kMoaErr_NoErr) {
+		return false;
+	}
+	return true;
+}
 
-// Disabled Handler Written Addresses for 8.5
-const DWORD WRITTEN_ADDRESS_DISABLE_GO_TO_NET_MOVIE_85 = 0x000029A1;
-const DWORD WRITTEN_ADDRESS_DISABLE_GO_TO_NET_PAGE_85 = 0x00002A2D;
+inline bool callLingoAlert(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterface, ConstPMoaChar message) {
+	// we can't just use Win32 API's MessageBox or it'll cause graphical glitches from the movie not being paused
+	// so we use Lingo's Alert handler (as per the XDK's recommendation)
+	MoaError err = kMoaErr_NoErr;
+	MoaMmSymbol alertSymbol;
+	MoaMmValue messageValue = kVoidMoaMmValueInitializer;
 
-// Bugfix Written Addresses for 8.5
-const DWORD WRITTEN_ADDRESS_BUGFIX_SHOCKWAVE_3D_BAD_DRIVER_LIST_85 = 0x000DC5D4;
-const DWORD WRITTEN_ADDRESS_BUGFIX_SHOCKWAVE_3D_BAD_DRIVER_LIST_85_2 = 0x000DC5E2;
+	err = pMoaMmValueInterface->StringToSymbol("Alert", &alertSymbol);
+	if (err != kMoaErr_NoErr) {
+		return false;
+	}
+	err = pMoaMmValueInterface->StringToValue(message, &messageValue);
+	if (err != kMoaErr_NoErr) {
+		return false;
+	}
+	err = pMoaDrMovieInterface->CallHandler(alertSymbol, 1, &messageValue, NULL);
+	if (err != kMoaErr_NoErr) {
+		return false;
+	}
+	return true;
+}
 
-// Set or Force Property Written Addresses for 10
-const DWORD WRITTEN_ADDRESS_SET_THE_MOVIE_PATH_10 = 0x000AD982;
-const DWORD WRITTEN_ADDRESS_SET_THE_RUN_MODE_10 = 0x000AC77E;
-const DWORD WRITTEN_ADDRESS_SET_THE_PLATFORM_10 = 0x000AE32F;
-const DWORD WRITTEN_ADDRESS_SET_THE_MACHINE_TYPE_10 = 0x000D40C0;
-const DWORD WRITTEN_ADDRESS_SET_THE_ENVIRONMENT_SHOCK_MACHINE_10 = 0x000E0A34;
-const DWORD WRITTEN_ADDRESS_FORCE_THE_EXIT_LOCK_10 = 0x00012E66;
-const DWORD WRITTEN_ADDRESS_FORCE_THE_EXIT_LOCK_2_10 = 0x000074BD;
-const DWORD WRITTEN_ADDRESS_FORCE_THE_EXIT_LOCK_3_10 = 0x00009629;
+inline bool callLingoAlertXtraMissing(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterface, ConstPMoaChar message) {
+	if (!callLingoAlert(pMoaMmValueInterface, pMoaDrMovieInterface, message)) {
+		return false;
+	}
+	if (!callLingoAlert(pMoaMmValueInterface, pMoaDrMovieInterface, "An Xtra that the LeechProtectionRemovalHelp Xtra requires, such as the NetLingo Xtra or Shockwave 3D Asset Xtra, is missing.")) {
+		return false;
+	}
+	return true;
+}
 
-// Set External Param Written Addresses for 10
-const DWORD WRITTEN_ADDRESS_SET_EXTERNAL_PARAM_NAME_10 = 0x000B248E;
-const DWORD WRITTEN_ADDRESS_SET_EXTERNAL_PARAM_NAME_10_2 = 0x000B24C0;
-const DWORD WRITTEN_ADDRESS_SET_EXTERNAL_PARAM_VALUE_10 = 0x000B259D;
-const DWORD WRITTEN_ADDRESS_SET_EXTERNAL_PARAM_VALUE_10_2 = 0x000B25DC;
-const DWORD WRITTEN_ADDRESS_SET_EXTERNAL_PARAM_COUNT_10 = 0x000B1648;
-const DWORD WRITTEN_ADDRESS_SET_EXTERNAL_PARAM_COUNT_10_2 = 0x000B1685;
+inline bool callLingoAlertComponentCorrupted(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterface, ConstPMoaChar message) {
+	if (!callLingoAlert(pMoaMmValueInterface, pMoaDrMovieInterface, message)) {
+		return false;
+	}
+	if (!callLingoAlert(pMoaMmValueInterface, pMoaDrMovieInterface, "A Component that the LeechProtectionRemovalHelp Xtra requires is corrupted, garbled or tampered with. Please use the official Components provided by Macromedia/Adobe.")) {
+		return false;
+	}
+	return true;
+}
 
-// Disabled Handler Written Addresses for 10
-const DWORD WRITTEN_ADDRESS_DISABLE_GO_TO_NET_MOVIE_10 = 0x00001AA4;
-const DWORD WRITTEN_ADDRESS_DISABLE_GO_TO_NET_PAGE_10 = 0x00001B30;
+inline bool callLingoAlertIncompatibleDirectorVersion(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterface, ConstPMoaChar message) {
+	if (!callLingoAlert(pMoaMmValueInterface, pMoaDrMovieInterface, message)) {
+		return false;
+	}
+	if (!callLingoAlert(pMoaMmValueInterface, pMoaDrMovieInterface, "The LeechProtectionRemovalHelp Xtra has determined it is incompatible with this Director version.")) {
+		return false;
+	}
+	return true;
+}
 
-// Bugfix Written Addresses for 10
-const DWORD WRITTEN_ADDRESS_BUGFIX_SHOCKWAVE_3D_BAD_DRIVER_LIST_10 = 0x000F5165;
-const DWORD WRITTEN_ADDRESS_BUGFIX_SHOCKWAVE_3D_BAD_DRIVER_LIST_10_2 = 0x000F5173;
+inline bool callLingoAlertAntivirus(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterface, ConstPMoaChar message) {
+	if (!callLingoAlert(pMoaMmValueInterface, pMoaDrMovieInterface, message)) {
+		return false;
+	}
+	if (!callLingoAlert(pMoaMmValueInterface, pMoaDrMovieInterface, "Your Antivirus may be preventing the LeechProtectionRemovalHelp Xtra from working properly.")) {
+		return false;
+	}
+	return true;
+}
 
-// Set or Force Property Written Addresses for 11.5
-const DWORD WRITTEN_ADDRESS_SET_THE_MOVIE_PATH_115 = 0x000DEE8C;
-const DWORD WRITTEN_ADDRESS_SET_THE_RUN_MODE_115 = 0x000DCDB2;
-const DWORD WRITTEN_ADDRESS_SET_THE_RUN_MODE_115_2 = 0x000DCDBF;
-const DWORD WRITTEN_ADDRESS_SET_THE_PLATFORM_115 = 0x000DF89E;
-const DWORD WRITTEN_ADDRESS_SET_THE_MACHINE_TYPE_115 = 0x0010F901;
-const DWORD WRITTEN_ADDRESS_SET_THE_ENVIRONMENT_SHOCK_MACHINE_115 = 0x00120E2D;
-const DWORD WRITTEN_ADDRESS_FORCE_THE_EXIT_LOCK_115 = 0x000179E2;
-const DWORD WRITTEN_ADDRESS_FORCE_THE_EXIT_LOCK_2_115 = 0x000088B0;
-const DWORD WRITTEN_ADDRESS_FORCE_THE_EXIT_LOCK_3_115 = 0x0000C27B;
+inline bool setLingoSafePlayer(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterface, MoaLong safePlayer) {
+	MoaError err = kMoaErr_NoErr;
+	MoaMmSymbol safePlayerSymbol;
+	MoaMmValue safePlayerValue = kVoidMoaMmValueInitializer;
 
-// Set External Param Written Addresses for 11.5
-const DWORD WRITTEN_ADDRESS_SET_EXTERNAL_PARAM_NAME_115 = 0x000E15BF;
-const DWORD WRITTEN_ADDRESS_SET_EXTERNAL_PARAM_NAME_115_2 = 0x000E15F3;
-const DWORD WRITTEN_ADDRESS_SET_EXTERNAL_PARAM_VALUE_115 = 0x000E162F;
-const DWORD WRITTEN_ADDRESS_SET_EXTERNAL_PARAM_VALUE_115_2 = 0x000E1670;
-const DWORD WRITTEN_ADDRESS_SET_EXTERNAL_PARAM_COUNT_115 = 0x000E144A;
-const DWORD WRITTEN_ADDRESS_SET_EXTERNAL_PARAM_COUNT_115_2 = 0x000E1490;
+	err = pMoaMmValueInterface->StringToSymbol("SafePlayer", &safePlayerSymbol);
+	if (err != kMoaErr_NoErr) {
+		return false;
+	}
+	err = pMoaMmValueInterface->IntegerToValue(safePlayer, &safePlayerValue);
+	if (err != kMoaErr_NoErr) {
+		return false;
+	}
+	err = pMoaDrMovieInterface->SetProp(safePlayerSymbol, &safePlayerValue);
+	if (err != kMoaErr_NoErr) {
+		return false;
+	}
+	return true;
+}
 
-// Disabled Handler Written Addresses for 11.5
-const DWORD WRITTEN_ADDRESS_DISABLE_GO_TO_NET_MOVIE_115 = 0x00001968;
-const DWORD WRITTEN_ADDRESS_DISABLE_GO_TO_NET_PAGE_115 = 0x00002090;
 
-// Bugfix Written Addresses for 11.5
-const DWORD WRITTEN_ADDRESS_BUGFIX_SHOCKWAVE_3D_BAD_DRIVER_LIST_115 = 0x000D6AF8;
-const DWORD WRITTEN_ADDRESS_BUGFIX_SHOCKWAVE_3D_BAD_DRIVER_LIST_115_2 = 0x000D6B06;
 
-// Set or Force Property Written Code Return Addresses 8.5
-const DWORD WRITTEN_CODE_RETURN_ADDRESS_SET_THE_MOVIE_PATH_85 = 0x000AA182;
-const DWORD WRITTEN_CODE_RETURN_ADDRESS_SET_THE_RUN_MODE_85 = 0x000AA182;
-const DWORD WRITTEN_CODE_RETURN_ADDRESS_SET_THE_PLATFORM_85 = 0x000AA182;
-const DWORD WRITTEN_CODE_RETURN_ADDRESS_SET_THE_ENVIRONMENT_SHOCK_MACHINE_85 = 0x000D333D;
-const DWORD WRITTEN_CODE_RETURN_ADDRESS_FORCE_THE_EXIT_LOCK_85 = 0x0001152C;
 
-// Set External Param Written Code Return Addresses 8.5
-const DWORD WRITTEN_CODE_RETURN_ADDRESS_SET_EXTERNAL_PARAM_NAME_85 = 0x000A8F5B;
-const DWORD WRITTEN_CODE_RETURN_ADDRESS_SET_EXTERNAL_PARAM_VALUE_85 = 0x000A906B;
-const DWORD WRITTEN_CODE_RETURN_ADDRESS_SET_EXTERNAL_PARAM_COUNT_85 = 0x000A8EF8;
+inline DWORD createExtendedCodeAddress(HANDLE moduleHandle, DWORD address) {
+	return (DWORD)moduleHandle + address;
+}
 
-// Bugfix Written Code Return Addresses 8.5
-const DWORD WRITTEN_CODE_RETURN_ADDRESS_BUGFIX_SHOCKWAVE_3D_BAD_DRIVER_LIST_85 = 0x000DD5D9;
-const DWORD WRITTEN_CODE_RETURN_ADDRESS_BUGFIX_SHOCKWAVE_3D_BAD_DRIVER_LIST_85_2 = 0x000DD5E7;
+bool getSectionAddressAndSize(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterface, HANDLE moduleHandle, DWORD virtualAddress, DWORD virtualSize) {
+	if (!moduleHandle) {
+		//callLingoAlertXtraMissing(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Get Module Handle");
+		return false;
+	}
+	PIMAGE_NT_HEADERS imageNtHeader = ImageNtHeader(moduleHandle);
+	if (!imageNtHeader) {
+		//callLingoAlert(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Get Image NT Header");
+		return false;
+	}
+	PIMAGE_SECTION_HEADER imageSectionHeader = (PIMAGE_SECTION_HEADER)(imageNtHeader + 1);
+	if (!imageSectionHeader) {
+		imageNtHeader = NULL;
+		//callLingoAlert(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Get Image Section Header");
+		return false;
+	}
+	for (WORD i = 0;i < imageNtHeader->FileHeader.NumberOfSections;i++) {
+		if (virtualAddress >= (DWORD)moduleHandle + imageSectionHeader->VirtualAddress && virtualAddress + virtualSize <= (DWORD)moduleHandle + imageSectionHeader->VirtualAddress + imageSectionHeader->Misc.VirtualSize) {
+			imageNtHeader = NULL;
+			imageSectionHeader = NULL;
+			return true;
+		}
+		imageSectionHeader++;
+	}
+	// not dangerous, so let the caller decide whether or not to quit
+	imageNtHeader = NULL;
+	imageSectionHeader = NULL;
+	return false;
+}
 
-// Set or Force Property Written Code Return Addresses 10
-const DWORD WRITTEN_CODE_RETURN_ADDRESS_SET_THE_MOVIE_PATH_10 = 0x000ADFD6;
-const DWORD WRITTEN_CODE_RETURN_ADDRESS_SET_THE_RUN_MODE_10 = 0x000AD951;
-const DWORD WRITTEN_CODE_RETURN_ADDRESS_SET_THE_PLATFORM_10 = 0x000AF35B;
-const DWORD WRITTEN_CODE_RETURN_ADDRESS_SET_THE_ENVIRONMENT_SHOCK_MACHINE_10 = 0x000E1A39;
-const DWORD WRITTEN_CODE_RETURN_ADDRESS_FORCE_THE_EXIT_LOCK_10 = 0x00013D34;
+bool unprotectCode(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterface, HANDLE moduleHandle, DWORD virtualAddress, DWORD virtualSize, DWORD &lpflOldProtect) {
+	if (!getSectionAddressAndSize(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, virtualAddress, virtualSize)) {
+		return false;
+	}
 
-// Set External Param Written Code Return Addresses 10
-const DWORD WRITTEN_CODE_RETURN_ADDRESS_SET_EXTERNAL_PARAM_NAME_10 = 0x000B34A9;
-const DWORD WRITTEN_CODE_RETURN_ADDRESS_SET_EXTERNAL_PARAM_VALUE_10 = 0x000B35B9;
-const DWORD WRITTEN_CODE_RETURN_ADDRESS_SET_EXTERNAL_PARAM_COUNT_10 = 0x000B2667;
+	if (!VirtualProtect((LPVOID)virtualAddress, virtualSize, PAGE_EXECUTE_READWRITE, &lpflOldProtect) || !virtualAddress || !virtualSize) {
+		return false;
+	}
 
-// Bugfix Written Code Return Addresses 10
-const DWORD WRITTEN_CODE_RETURN_ADDRESS_BUGFIX_SHOCKWAVE_3D_BAD_DRIVER_LIST_10 = 0x000FA16A;
-const DWORD WRITTEN_CODE_RETURN_ADDRESS_BUGFIX_SHOCKWAVE_3D_BAD_DRIVER_LIST_10_2 = 0x000FA178;
+	// get Basic Memory Information
+	MEMORY_BASIC_INFORMATION memoryBasicInformation;
+	if (VirtualQuery((LPCVOID)virtualAddress, &memoryBasicInformation, sizeof(memoryBasicInformation)) != sizeof(memoryBasicInformation)
+		|| !memoryBasicInformation.Protect
+		|| memoryBasicInformation.Protect & PAGE_NOACCESS
+		|| memoryBasicInformation.Protect & PAGE_EXECUTE) {
+		// dangerous - we unprotected the code but we can't query it, so quit
+		callLingoAlertAntivirus(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Get Basic Memory Information");
+		callLingoQuit(pMoaMmValueInterface, pMoaDrMovieInterface);
+		TerminateProcess(GetCurrentProcess(), 0);
+		return false;
+	}
+	return true;
+}
 
-// Set or Force Property Written Code Return Addresses 11.5
-const DWORD WRITTEN_CODE_RETURN_ADDRESS_SET_THE_MOVIE_PATH_115 = 0x000DFE91;
-const DWORD WRITTEN_CODE_RETURN_ADDRESS_SET_THE_RUN_MODE_115 = 0x000DDDB7;
-const DWORD WRITTEN_CODE_RETURN_ADDRESS_SET_THE_RUN_MODE_115_2 = 0x000DDDC6;
-const DWORD WRITTEN_CODE_RETURN_ADDRESS_SET_THE_PLATFORM_115 = 0x000E08A3;
-const DWORD WRITTEN_CODE_RETURN_ADDRESS_SET_THE_ENVIRONMENT_SHOCK_MACHINE_115 = 0x00121E32;
-const DWORD WRITTEN_CODE_RETURN_ADDRESS_FORCE_THE_EXIT_LOCK_115 = 0x000189E8;
+bool protectCode(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterface, HANDLE moduleHandle, DWORD virtualAddress, DWORD virtualSize, DWORD &lpflOldProtect) {
+	if (!getSectionAddressAndSize(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, virtualAddress, virtualSize)) {
+		callLingoAlertComponentCorrupted(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Get Section Address And Size");
+		return false;
+	}
 
-// Set External Param Written Code Return Addresses 11.5
-const DWORD WRITTEN_CODE_RETURN_ADDRESS_SET_EXTERNAL_PARAM_NAME_115 = 0x000E25DB;
-const DWORD WRITTEN_CODE_RETURN_ADDRESS_SET_EXTERNAL_PARAM_VALUE_115 = 0x000E264C;
-const DWORD WRITTEN_CODE_RETURN_ADDRESS_SET_EXTERNAL_PARAM_COUNT_115 = 0x000E246B;
+	if (!lpflOldProtect || !VirtualProtect((LPVOID)virtualAddress, virtualSize, lpflOldProtect, &lpflOldProtect)) {
+		callLingoAlertAntivirus(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Protect Code");
+		return false;
+	}
+	return true;
+}
 
-// Bugfix Written Code Return Addresses 11.5
-const DWORD WRITTEN_CODE_RETURN_ADDRESS_BUGFIX_SHOCKWAVE_3D_BAD_DRIVER_LIST_115 = 0x000D7AFD;
-const DWORD WRITTEN_CODE_RETURN_ADDRESS_BUGFIX_SHOCKWAVE_3D_BAD_DRIVER_LIST_115_2 = 0x000D7B0B;
+bool flushCode(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterface, HANDLE moduleHandle, DWORD virtualAddress, DWORD virtualSize) {
+	if (!getSectionAddressAndSize(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, virtualAddress, virtualSize)) {
+		callLingoAlertComponentCorrupted(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Get Section Address And Size");
+		return false;
+	}
 
-// Module Handles
-HANDLE moduleHandleDirectorAPI = NULL;
-bool moduleHandleDirectorAPISet = false;
-HANDLE moduleHandleNetLingoXtra = NULL;
-bool moduleHandleNetLingoXtraSet = false;
-HANDLE moduleHandleShockwave3DAssetXtra = NULL;
-bool moduleHandleShockwave3DAssetXtraSet = false;
+	if (!FlushInstructionCache(GetCurrentProcess(), (LPCVOID)virtualAddress, virtualSize)) {
+		callLingoAlertAntivirus(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Flush Code");
+		return false;
+	}
+	return true;
+}
 
-// Module Handle Written Code Return Addresses
-HANDLE moduleHandleWrittenCodeReturnAddressSetTheMoviePath = NULL;
-HANDLE moduleHandleWrittenCodeReturnAddressSetTheRunMode = NULL;
-HANDLE moduleHandleWrittenCodeReturnAddressSetTheRunMode2 = NULL;
-HANDLE moduleHandleWrittenCodeReturnAddressSetThePlatform = NULL;
-HANDLE moduleHandleWrittenCodeReturnAddressSetTheEnvironment_ShockMachine = NULL;
-HANDLE moduleHandleWrittenCodeReturnAddressForceTheExitLock = NULL;
-HANDLE moduleHandleWrittenCodeReturnAddressSetExternalParamName = NULL;
-HANDLE moduleHandleWrittenCodeReturnAddressSetExternalParamValue = NULL;
-HANDLE moduleHandleWrittenCodeReturnAddressSetExternalParamCount = NULL;
-HANDLE moduleHandleWrittenCodeReturnAddressBugfixShockwave3DBadDriverList = NULL;
-HANDLE moduleHandleWrittenCodeReturnAddressBugfixShockwave3DBadDriverList2 = NULL;
+bool testCode(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterface, HANDLE moduleHandle, DWORD relativeVirtualAddress, DWORD virtualSize, unsigned char code[]) {
+	if (!moduleHandle) {
+		return false;
+	}
+	DWORD virtualAddress = (DWORD)moduleHandle + relativeVirtualAddress;
+	DWORD lpflOldProtect = 0;
 
-enum TESTED_SET {
-	TESTED_SET_NULL,
-	TESTED_SET_85,
-	TESTED_SET_10,
-	TESTED_SET_115
-};
-TESTED_SET testedDirectorAPISet = TESTED_SET_NULL;
-TESTED_SET testedNetLingoXtraSet = TESTED_SET_NULL;
-TESTED_SET testedShockwave3DAssetXtraSet = TESTED_SET_NULL;
+	if (!unprotectCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, virtualAddress, virtualSize, lpflOldProtect)) {
+		return false;
+	}
+
+	bool result = memoryEqual((const void*)virtualAddress, (const void*)code, virtualSize);
+
+	if (!protectCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, virtualAddress, virtualSize, lpflOldProtect)) {
+		callLingoQuit(pMoaMmValueInterface, pMoaDrMovieInterface);
+		TerminateProcess(GetCurrentProcess(), 0);
+		return false;
+	}
+	return result;
+}
+
+bool extendCode(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterface, HANDLE moduleHandle, DWORD relativeVirtualAddress, void* code, bool call = false) {
+	if (!moduleHandle) {
+		return false;
+	}
+	DWORD virtualAddress = (DWORD)moduleHandle + relativeVirtualAddress;
+	DWORD virtualSize = 5;
+	DWORD lpflOldProtect = 0;
+
+	if (!unprotectCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, virtualAddress, virtualSize, lpflOldProtect)) {
+		return false;
+	}
+
+	if (!call) {
+		*(BYTE*)virtualAddress = 0xE9;
+	} else {
+		*(BYTE*)virtualAddress = 0x58;
+	}
+
+	*(DWORD*)((BYTE*)virtualAddress + 1) = (DWORD)code - virtualAddress - virtualSize;
+
+	if (!flushCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, virtualAddress, virtualSize)) {
+		callLingoQuit(pMoaMmValueInterface, pMoaDrMovieInterface);
+		TerminateProcess(GetCurrentProcess(), 0);
+		return false;
+	}
+
+	if (!protectCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, virtualAddress, virtualSize, lpflOldProtect)) {
+		callLingoQuit(pMoaMmValueInterface, pMoaDrMovieInterface);
+		TerminateProcess(GetCurrentProcess(), 0);
+		return false;
+	}
+	return true;
+}
+
+bool extendCode(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterface, HANDLE moduleHandle, DWORD relativeVirtualAddress) {
+	if (!moduleHandle) {
+		return false;
+	}
+	DWORD virtualAddress = (DWORD)moduleHandle + relativeVirtualAddress;
+	DWORD virtualSize = 1;
+	DWORD lpflOldProtect = 0;
+
+	if (!unprotectCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, virtualAddress, virtualSize, lpflOldProtect)) {
+		return false;
+	}
+
+	*(BYTE*)virtualAddress = 0x90;
+
+	if (!flushCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, virtualAddress, virtualSize)) {
+		callLingoQuit(pMoaMmValueInterface, pMoaDrMovieInterface);
+		TerminateProcess(GetCurrentProcess(), 0);
+		return false;
+	}
+
+	if (!protectCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, virtualAddress, virtualSize, lpflOldProtect)) {
+		callLingoQuit(pMoaMmValueInterface, pMoaDrMovieInterface);
+		TerminateProcess(GetCurrentProcess(), 0);
+		return false;
+	}
+	return true;
+}
+
+
+
 
 // Properties
-MoaChar theMoviePath[257];
-MoaChar theRunMode[257];
-int theRunModeSet = false;
-MoaChar thePlatform[257];
+const size_t THE_MOVIE_PATH_SIZE = 256;
+MoaChar theMoviePath[THE_MOVIE_PATH_SIZE] = "";
+
+const size_t THE_MOVIE_NAME_SIZE = 256;
+MoaChar theMovieName[THE_MOVIE_NAME_SIZE] = "";
+
+MoaLong theEnvironment_shockMachine = 0;
+
+const size_t THE_ENVIRONMENT_SHOCK_MACHINE_VERSION_SIZE = 256;
+MoaChar theEnvironment_shockMachineVersion[THE_ENVIRONMENT_SHOCK_MACHINE_VERSION_SIZE] = "";
+
+const size_t THE_PLATFORM_SIZE = 256;
+MoaChar thePlatform[THE_PLATFORM_SIZE] = "";
+
+const size_t THE_RUN_MODE_SIZE = 256;
+MoaChar theRunMode[THE_RUN_MODE_SIZE] = "";
+
+const size_t THE_ENVIRONMENT_PRODUCT_BUILD_VERSION_SIZE = 256;
+MoaChar theEnvironment_productBuildVersion[THE_ENVIRONMENT_PRODUCT_BUILD_VERSION_SIZE] = "";
+
+const size_t THE_PRODUCT_VERSION_SIZE = 256;
+MoaChar theProductVersion[THE_PRODUCT_VERSION_SIZE] = "";
+
+const size_t THE_ENVIRONMENT_OS_VERSION_SIZE = 256;
+MoaChar theEnvironment_osVersion[THE_ENVIRONMENT_OS_VERSION_SIZE] = "";
+
 MoaLong theMachineType = 0;
-MoaLong theEnvironment_ShockMachine = 0;
+
 MoaLong theExitLock = 0;
 
+MoaLong theSafePlayer = 0;
+
 // External Params
-int sizeofExternalParams = 0;
-PMoaChar externalParams = new char[sizeofExternalParams];
+size_t externalParamsSize = 0;
+PMoaChar externalParams = NULL;
 
-__declspec(naked) void writtenSetTheMoviePath85() {
-	__asm {
-		// check we're in a Lingo script
-		push eax
-		mov eax, [ebp + 48h] // the return address of the subroutine we're currently in
-		sub eax, moduleHandleDirectorAPI // regardless of where the module is loaded
-		cmp eax, 000C9E6Ah // the address of Lingo's code
-		pop eax
-		jnz do_not_set
 
-		// we can't just replace the old string because we won't have enough room
-		// the old string is on the stack so it'll just go out of scope
-		lea eax, theMoviePath
-		jmp epilogue
 
-		// this is just a repeat of some code we have to skip over when going back
-		do_not_set:
-		lea eax, [ebp - 0114h]
 
-		epilogue:
-		push [ebp + 14h]
-		jmp [moduleHandleWrittenCodeReturnAddressSetTheMoviePath]
-	}
-}
-
-__declspec(naked) void writtenSetTheRunMode85() {
-	__asm {
-		// we can get here multiple ways
-		// check if the property is the one we want to replace
-		cmp esi, 00000001h
-		jnz do_not_set
-
-		// check we're in a Lingo script
-		push eax
-		mov eax, [ebp + 48h] // the return address of the subroutine we're currently in
-		sub eax, moduleHandleDirectorAPI // regardless of where the module is loaded
-		cmp eax, 000C9E6Ah // the address of Lingo's code in 8.5
-		pop eax
-		jnz do_not_set
-
-		lea eax, theRunMode
-		jmp [moduleHandleWrittenCodeReturnAddressSetTheRunMode]
-
-		do_not_set:
-		lea eax, [ebp - 0114h]
-		jmp [moduleHandleWrittenCodeReturnAddressSetTheRunMode]
-	}
-}
-
-__declspec(naked) void writtenSetThePlatform85() {
-	__asm {
-		// check we're in a Lingo script
-		push eax
-		mov eax, [ebp + 48h] // the return address of the subroutine we're currently in
-		sub eax, moduleHandleDirectorAPI // regardless of where the module is loaded
-		cmp eax, 000C9E6Ah // the address of Lingo's code in 8.5
-		pop eax
-		jnz do_not_set
-
-		lea eax, thePlatform
-		jmp epilogue
-
-		// again, this is just a repeat of some code we have to skip over when going back
-		do_not_set:
-		lea eax, [ebp - 0114h]
-
-		epilogue:
-		push [ebp + 14h]
-		jmp [moduleHandleWrittenCodeReturnAddressSetThePlatform]
-	}
-}
-
-__declspec(naked) void writtenSetTheMachineType85() {
-	__asm {
-		// this code is terribly hard to read, even for assembly
-		// somebody let me know if there's equivalent code to accomplish the same but better
-
-		// we can get here multiple ways again
-		// however the value we need to check is at esp - 04h
-		// but we want all our registers to remain untouched
-		// so subtract four from esp
-		sub esp, 04h
-		push eax
-		// check it's correct
-		mov eax, [esp + 04h]
-		cmp eax, 0000005Bh
-		pop eax
-		// we can't immediately add to esp or it'll affect the registers from our compare
-		jnz do_not_set
-
-		// add four back to esp after not jumping
-		add esp, 04h
-
-		// check we're in a Lingo script
-		push eax
-		mov eax, [esp + 0Ch] // the return address of the subroutine we're currently in
-		sub eax, moduleHandleDirectorAPI // regardless of where the module is loaded
-		cmp eax, 000CA275h // the address of Lingo's code in 8.5
-		pop eax
-		jnz epilogue
-
-		// get the address and replace the machine type
-		push eax
-		push ebx
-		mov eax, [esp + 0Ch]
-		mov ebx, theMachineType
-		mov [eax + 20h], ebx
-		pop ebx
-		pop eax
-
-		// prevent adding four more back to esp
-		jmp epilogue
-
-		do_not_set:
-		// add four back to esp after jumping
-		add esp, 04h
-		
-		// epilogue code
-		// we're at the end of the subroutine anyway so just return normally
-		epilogue:
-		pop edi
-		pop esi
-		retn 8
-	}
-}
-
-__declspec(naked) void writtenSetTheEnvironment_ShockMachine85() {
-	__asm {
-		// push the arguments for the subroutine we're going to call
-		push eax
-		push esi
-
-		// check the property is the one we care about
-		push eax
-		mov eax, [ebp + 10h] // the property's address we're going to pass
-		cmp eax, 00000353h // shockMachine 8.5
-		pop eax
-		jnz do_not_set
-
-		// check the subroutine we're going to call is the one we care about
-		push eax
-		mov eax, [ecx + 18h] // the subroutine's address we're going to call
-		sub eax, moduleHandleDirectorAPI // regardless of where the module is loaded
-		cmp eax, 000BFBDDh // the address of the subroutine we care about in 8.5
-		pop eax
-		jnz do_not_set
-
-		// check we're in a Lingo script
-		push eax
-		mov eax, [ebp + 34h] // the return address of the subroutine we're currently in
-		sub eax, moduleHandleDirectorAPI // regardless of where the module is loaded
-		cmp eax, 000C9F40h // the address of Lingo's code in 8.5
-		pop eax
-		jnz do_not_set
-
-		// call the subroutine we do care about
-		call [ecx + 18h]
-
-		// the call has completed, set the variable it returned to
-		push eax
-		mov eax, theEnvironment_ShockMachine
-		mov [ebp + 24h], eax
-		pop eax
-
-		// avoid calling the subroutine a second time
-		jmp [moduleHandleWrittenCodeReturnAddressSetTheEnvironment_ShockMachine]
-
-		do_not_set:
-		// call a subroutine we don't care about
-		call [ecx + 18h]
-
-		jmp [moduleHandleWrittenCodeReturnAddressSetTheEnvironment_ShockMachine]
-	}
-}
-
-__declspec(naked) void writtenForceTheExitLock() {
-	__asm {
-		// we want all of Director to force this exit lock, so we don't need to check if we're in a Lingo script
-		mov ecx, theExitLock
-		jmp [moduleHandleWrittenCodeReturnAddressForceTheExitLock]
-	}
-}
-
-__declspec(naked) void writtenForceTheExitLock23() {
-	__asm {
-		// in addition to telling Lingo what the exitLock is, we also need to actually have it have an effect
-		mov eax, theExitLock
-		retn 04h
-	}
-}
-
-__declspec(naked) void writtenSetExternalParamName8510() {
-	__asm {
-		// this is for a Lingo handler, so we don't need to check if we're in a Lingo script
-		mov eax, externalParams
-		jmp [moduleHandleWrittenCodeReturnAddressSetExternalParamName]
-	}
-}
-
-__declspec(naked) void writtenSetExternalParamValue8510() {
-	__asm {
-		// we don't need to check if we're in a Lingo script for the same reason as above
-		mov eax, externalParams
-		jmp [moduleHandleWrittenCodeReturnAddressSetExternalParamValue]
-	}
-}
-
-__declspec(naked) void writtenSetExternalParamCount8510() {
-	__asm {
-		// ditto
-		push esi
-		mov eax, externalParams
-		jmp [moduleHandleWrittenCodeReturnAddressSetExternalParamCount]
-	}
-}
-
-__declspec(naked) void writtenSetTheMoviePath10() {
-	__asm {
-		// check we're in a Lingo script
-		push eax
-		mov eax, [ebp + 0178h] // the return address of the subroutine we're currently in
-		sub eax, moduleHandleDirectorAPI // regardless of where the module is loaded
-		cmp eax, 000D7059h // the address of Lingo's code in 10
-		pop eax
-		jnz do_not_set
-
-		// this is done first in 10, not that I think it matters
-		push [ebp + 14h]
-		lea eax, theMoviePath
-		jmp [moduleHandleWrittenCodeReturnAddressSetTheMoviePath]
-
-		do_not_set:
-		lea eax, [ebp - 0114h]
-		jmp [moduleHandleWrittenCodeReturnAddressSetTheMoviePath]
-	}
-}
-
-__declspec(naked) void writtenSetTheRunMode10() {
-	__asm {
-		// we can get here multiple ways
-		// check if the property is the one we want to replace
-		cmp edi, 00000001h
-		jnz do_not_set
-
-		// check we're in a Lingo script
-		push eax
-		mov eax, [ebp + 0178h] // the return address of the subroutine we're currently in
-		sub eax, moduleHandleDirectorAPI // regardless of where the module is loaded
-		cmp eax, 000D7059h // the address of Lingo's code in 10
-		pop eax
-		jnz do_not_set
-
-		// just like in 8.5, there's no additional push here
-		lea eax, theRunMode
-		jmp [moduleHandleWrittenCodeReturnAddressSetTheRunMode]
-
-		do_not_set:
-		// or here
-		lea eax, [ebp - 0114h]
-		jmp [moduleHandleWrittenCodeReturnAddressSetTheRunMode]
-	}
-}
-
-__declspec(naked) void writtenSetThePlatform10() {
-	__asm {
-		// check we're in a Lingo script
-		push eax
-		mov eax, [ebp + 4Ch] // the return address of the subroutine we're currently in
-		sub eax, moduleHandleDirectorAPI // regardless of where the module is loaded
-		cmp eax, 000D7059h // the address of Lingo's code in 10
-		pop eax
-		jnz do_not_set
-
-		// the other push isn't done here in 10
-		lea eax, thePlatform
-		jmp [moduleHandleWrittenCodeReturnAddressSetThePlatform]
-
-		do_not_set:
-		lea eax, [ebp - 0114h]
-		jmp [moduleHandleWrittenCodeReturnAddressSetThePlatform]
-	}
-}
-
-__declspec(naked) void writtenSetTheMachineType10() {
-	__asm {
-		// we can get here multiple ways again
-		// however the value we need to check is at esp - 04h
-		// but we want all our registers to remain untouched
-		// so subtract four from esp
-		sub esp, 04h
-		push eax
-		// check it's correct
-		mov eax, [esp + 04h]
-		cmp eax, 0000005Bh
-		pop eax
-		// we can't immediately add to esp or it'll affect the registers from our compare
-		jnz do_not_set
-
-		// add four back to esp after not jumping
-		add esp, 04h
-
-		// check we're in a Lingo script
-		push eax
-		mov eax, [esp + 0Ch] // the return address of the subroutine we're currently in
-		sub eax, moduleHandleDirectorAPI // regardless of where the module is loaded
-		cmp eax, 000D7463h // the address of Lingo's code in 10
-		pop eax
-		jnz epilogue
-
-		// get the address and replace the machine type
-		push eax
-		push ebx
-		mov eax, [esp + 0Ch]
-		mov ebx, theMachineType
-		mov [eax + 20h], ebx
-		pop ebx
-		pop eax
-
-		// prevent adding four more back to esp
-		jmp epilogue
-
-		do_not_set:
-		// add four back to esp after jumping
-		add esp, 04h
-
-		// epilogue code
-		// we're at the end of the subroutine anyway so just return normally
-		epilogue:
-		pop edi
-		pop esi
-		retn 8
-	}
-}
-
-__declspec(naked) void writtenSetTheEnvironment_ShockMachine10() {
-	__asm {
-		// push the arguments for the subroutine we're going to call
-		push eax
-		push esi
-
-		// check the property is the one we care about
-		push eax
-		mov eax, [ebp + 10h] // the property's address we're going to pass
-		cmp eax, 00000372h // shockMachine 10
-		pop eax
-		jnz do_not_set
-
-		// check the subroutine we're going to call is the one we care about
-		push eax
-		mov eax, [ecx + 18h] // the subroutine's address we're going to call
-		sub eax, moduleHandleDirectorAPI // regardless of where the module is loaded
-		cmp eax, 000CCBDDh // the address of the subroutine we care about in 10
-		pop eax
-		jnz do_not_set
-
-		// check we're in a Lingo script
-		push eax
-		mov eax, [ebp + 34h] // the return address of the subroutine we're currently in
-		sub eax, moduleHandleDirectorAPI // regardless of where the module is loaded
-		cmp eax, 000D712Fh // the address of Lingo's code in 10
-		pop eax
-		jnz do_not_set
-
-		// call the subroutine we do care about
-		call [ecx + 18h]
-
-		// the call has completed, set the variable it returned to
-		push eax
-		mov eax, theEnvironment_ShockMachine
-		mov [ebp + 24h], eax
-		pop eax
-
-		// avoid calling the subroutine a second time
-		jmp [moduleHandleWrittenCodeReturnAddressSetTheEnvironment_ShockMachine]
-
-		do_not_set:
-		// call a subroutine we don't care about
-		call [ecx + 18h]
-
-		jmp [moduleHandleWrittenCodeReturnAddressSetTheEnvironment_ShockMachine]
-	}
-}
-
-__declspec(naked) void writtenSetTheMoviePath115() {
-	__asm {
-		// check we're in a Lingo script
-		push eax
-		mov eax, [esp + 0894h] // the return address of the subroutine we're currently in
-		sub eax, moduleHandleDirectorAPI // regardless of where the module is loaded
-		cmp eax, 00112FDDh // the address of Lingo's code in 11.5
-		pop eax
-		push eax // 11 does this
-		jnz do_not_set
-
-		// we can't just replace the old string because we won't have enough room
-		// the old string is on the stack so it'll just go out of scope
-		// these are not Unicode strings in 11.5, despite 11.5 being Unicode compatible, somehow
-		lea ecx, theMoviePath
-		jmp [moduleHandleWrittenCodeReturnAddressSetTheMoviePath]
-
-		// this is just a repeat of some code we have to skip over when going back
-		do_not_set:
-		lea ecx, [esp + 24h]
-
-		jmp [moduleHandleWrittenCodeReturnAddressSetTheMoviePath]
-	}
-}
-
-__declspec(naked) void writtenSetTheRunMode115() {
-	__asm {
-		// we can get here multiple ways
-		// check if the property is the one we want to replace
-		push edx
-		mov edx, [esp - 04h]
-		mov theRunModeSet, edx
-		pop edx
-
-		lea edx, [esp + 1Ch]
-		push edx
-		jmp [moduleHandleWrittenCodeReturnAddressSetTheRunMode]
-	}
-}
-
-__declspec(naked) void writtenSetTheRunMode1152() {
-	__asm {
-		// we can get here multiple ways
-		// check if the property is the one we want to replace
-		push edx
-		mov edx, theRunModeSet
-		cmp edx, 00000001h
-		pop edx
-		jnz epilogue
-
-		// check we're in a Lingo script
-		push eax
-		mov eax, [esp + 0890h] // the return address of the subroutine we're currently in
-		sub eax, moduleHandleDirectorAPI // regardless of where the module is loaded
-		cmp eax, 00112FDDh // the address of Lingo's code in 11.5
-		pop eax
-		jnz epilogue
-
-		lea eax, theRunMode
-
-		epilogue:
-		// eax already contains the correct thing
-		push eax
-		push esi
-		mov eax, 000F83C0h
-		add eax, moduleHandleDirectorAPI
-		call eax
-		jmp [moduleHandleWrittenCodeReturnAddressSetTheRunMode2]
-	}
-}
-
-__declspec(naked) void writtenSetThePlatform115() {
-	__asm {
-		// check we're in a Lingo script
-		push eax
-		mov eax, [esp + 0464h] // the return address of the subroutine we're currently in
-		sub eax, moduleHandleDirectorAPI // regardless of where the module is loaded
-		cmp eax, 00112FDDh // the address of Lingo's code in 11.5
-		pop eax
-		jnz do_not_set
-
-		lea ecx, thePlatform
-		// a push is done here in 11.5
-		push ecx
-		jmp [moduleHandleWrittenCodeReturnAddressSetThePlatform]
-
-		do_not_set:
-		lea ecx, [esp + 18h]
-		// and as such here as well
-		push ecx
-		jmp [moduleHandleWrittenCodeReturnAddressSetThePlatform]
-	}
-}
-
-__declspec(naked) void writtenSetTheMachineType115() {
-	__asm {
-		// slightly different stack than 8.5/10 here
-		push eax
-		mov eax, [esp + 50h]
-		cmp eax, 0000005Bh
-		pop eax
-		jnz epilogue
-
-		// check we're in a Lingo script
-		push eax
-		mov eax, [esp + 48h] // the return address of the subroutine we're currently in
-		sub eax, moduleHandleDirectorAPI // regardless of where the module is loaded
-		cmp eax, 001133F5h // the address of Lingo's code in 10
-		pop eax
-		jnz epilogue
-
-		// get the address and replace the machine type
-		push ebx
-		mov ebx, theMachineType
-		mov [esi + 20h], ebx
-		pop ebx
-
-		// epilogue code
-		// we're at the end of the subroutine anyway so just return normally
-		epilogue:
-		pop ebx
-		mov esp, ebp
-		pop ebp
-		retn 8
-	}
-}
-
-__declspec(naked) void writtenSetTheEnvironment_ShockMachine115() {
-	__asm {
-		// push the arguments for the subroutine we're going to call
-		push eax
-		push esi
-
-		// check the property is the one we care about
-		cmp ebp, 00000372h // shockMachine 11.5
-		jnz do_not_set
-
-		// check the subroutine we're going to call is the one we care about
-		push eax
-		mov eax, [edx + 18h] // the subroutine's address we're going to call (11.5 has it in EDX not ECX)
-		sub eax, moduleHandleDirectorAPI // regardless of where the module is loaded
-		cmp eax, 0010A280h // the address of the subroutine we care about in 11.5
-		pop eax
-		jnz do_not_set
-
-		// check we're in a Lingo script
-		push eax
-		mov eax, [esp + 48h] // the return address of the subroutine we're currently in
-		sub eax, moduleHandleDirectorAPI // regardless of where the module is loaded
-		cmp eax, 001130ABh // the address of Lingo's code in 11.5
-		pop eax
-		jnz do_not_set
-
-		// call the subroutine we do care about
-		call [edx + 18h]
-
-		// the call has completed, set the variable it returned to
-		push eax
-		mov eax, theEnvironment_ShockMachine
-		mov [edi + 04h], eax
-		pop eax
-
-		// avoid calling the subroutine a second time
-		jmp [moduleHandleWrittenCodeReturnAddressSetTheEnvironment_ShockMachine]
-
-		do_not_set:
-		// call a subroutine we don't care about
-		call [edx + 18h]
-
-		jmp [moduleHandleWrittenCodeReturnAddressSetTheEnvironment_ShockMachine]
-	}
-}
-
-__declspec(naked) void writtenSetExternalParamName115() {
-	__asm {
-		// this is for a Lingo handler, so we don't need to check if we're in a Lingo script
-		push esi
-		mov eax, externalParams
-		jmp [moduleHandleWrittenCodeReturnAddressSetExternalParamName]
-	}
-}
-
-__declspec(naked) void writtenSetExternalParamValue115() {
-	__asm {
-		// we don't need to check if we're in a Lingo script for the same reason as above
-		push ebx
-		push esi
-		mov eax, externalParams
-		jmp [moduleHandleWrittenCodeReturnAddressSetExternalParamValue]
-	}
-}
-
-__declspec(naked) void writtenSetExternalParamCount115() {
-	__asm {
-		// ditto
-		push ebx
-		push edi
-		mov eax, externalParams
-		jmp [moduleHandleWrittenCodeReturnAddressSetExternalParamCount]
-	}
-}
-
-__declspec(naked) void writtenDisableGoToNetThing() {
-	__asm {
-		retn 8
-	}
-}
-
-__declspec(naked) void writtenBugfixShockwave3DBadDriverList85() {
-	__asm {
-		mov esi, [ebp - 4]
-		add esi, 0109h
-		jmp [moduleHandleWrittenCodeReturnAddressBugfixShockwave3DBadDriverList]
-	}
-}
-
-__declspec(naked) void writtenBugfixShockwave3DBadDriverList852() {
-	__asm {
-		push 0104h
-		push edi
-		mov [ebp - 14h], edi
-		jmp [moduleHandleWrittenCodeReturnAddressBugfixShockwave3DBadDriverList2]
-	}
-}
-
-__declspec(naked) void writtenBugfixShockwave3DBadDriverList10() {
-	__asm {
-		mov esi, [ebp - 4]
-		add esi, 0109h
-		jmp [moduleHandleWrittenCodeReturnAddressBugfixShockwave3DBadDriverList]
-	}
-}
-
-__declspec(naked) void writtenBugfixShockwave3DBadDriverList102() {
-	__asm {
-		push 0104h
-		push edi
-		mov [ebp - 14h], edi
-		jmp [moduleHandleWrittenCodeReturnAddressBugfixShockwave3DBadDriverList2]
-	}
-}
-
-__declspec(naked) void writtenBugfixShockwave3DBadDriverList115() {
-	__asm {
-		mov edi, [ebp - 1Ch]
-		add edi, 0109h
-		jmp [moduleHandleWrittenCodeReturnAddressBugfixShockwave3DBadDriverList]
-	}
-}
-
-__declspec(naked) void writtenBugfixShockwave3DBadDriverList1152() {
-	__asm {
-		push 0104h
-		push ebx
-		mov [ebp - 14h], ebx
-		mov [ebp - 1Ch], edi
-		jmp [moduleHandleWrittenCodeReturnAddressBugfixShockwave3DBadDriverList2]
-	}
-}
+bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterface, MoaMmSymbol methodSelector, MODULE module);
 
 #endif

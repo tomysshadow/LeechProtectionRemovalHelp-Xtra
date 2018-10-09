@@ -43,16 +43,14 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
     <TargetName>LeechProtectionRemovalHelp</TargetName>
-    <OutDir>C:\Users\Anthony\Games\Adobe Director\Director 11.5\Configuration\Xtras\</OutDir>
-    <TargetExt>.x32</TargetExt>
-    <IntDir>C:\Users\Anthony\Games\Adobe Director\Director 11.5\Configuration\Xtras\</IntDir>
+    <OutDir>$(SolutionDir)$(Configuration)\</OutDir>
+    <IntDir>$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
     <TargetName>LeechProtectionRemovalHelp</TargetName>
-    <OutDir>C:\Users\Anthony\Games\Adobe Director\Director 11.5\Configuration\Xtras\</OutDir>
-    <TargetExt>.x32</TargetExt>
-    <IntDir>C:\Users\Anthony\Games\Adobe Director\Director 11.5\Configuration\Xtras\</IntDir>
+    <OutDir>$(SolutionDir)$(Configuration)\</OutDir>
+    <IntDir>$(Configuration)\</IntDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -79,7 +77,7 @@
       <SubSystem>Windows</SubSystem>
       <ImportLibrary>.\Release/Script.lib</ImportLibrary>
       <TargetMachine>MachineX86</TargetMachine>
-      <OutputFile>C:\Users\Anthony\Games\Adobe Director\Director 11.5\Configuration\Xtras\LeechProtectionRemovalHelp.x32</OutputFile>
+      <OutputFile>$(OutDir)LeechProtectionRemovalHelp.x32</OutputFile>
     </Link>
     <Midl>
       <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -118,7 +116,7 @@
       <SubSystem>Windows</SubSystem>
       <ImportLibrary>.\Debug/Script.lib</ImportLibrary>
       <TargetMachine>MachineX86</TargetMachine>
-      <OutputFile>C:\Users\Anthony\Games\Adobe Director\Director 11.5\Configuration\Xtras\LeechProtectionRemovalHelp.x32</OutputFile>
+      <OutputFile>$(OutDir)LeechProtectionRemovalHelp.x32</OutputFile>
     </Link>
     <Midl>
       <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
