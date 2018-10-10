@@ -37,7 +37,7 @@ Usage
 	on exitFrame me
 		setTheMoviePath("http://addictinggames.com/newGames/metalmayhemworldtour/")
 		setTheMovieName("metalmayhemworldtour.dcr")
-		setTheEnvironment_shockMachine(1)
+		setTheEnvironment_shockMachine(0)
 		setTheEnvironment_shockMachineVersion("")
 		setThePlatform("Windows,32")
 		setTheRunMode("Author")
