@@ -77,6 +77,10 @@ EXTERN_END_DEFINE_CLASS_INTERFACE
 
 
 
+inline size_t stringSize(const char* string) {
+	return strlen(string) + 1;
+}
+
 inline bool stringsEqual(const char* leftHandSide, const char* rightHandSide) {
 	return !strcmp(leftHandSide, rightHandSide);
 }

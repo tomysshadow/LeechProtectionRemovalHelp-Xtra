@@ -1,5 +1,5 @@
 ﻿  Script.cpp
-c:\users\anthony\documents\visual studio 2015\projects\xdk_win\xdk\examples\script\leechprotectionremovalhelp xtra\source\script.h(93): warning C4133: '-': incompatible types - from 'const void *' to 'char *'
+c:\users\anthony\documents\visual studio 2015\projects\xdk_win\xdk\examples\script\leechprotectionremovalhelp xtra\source\script.h(97): warning C4133: '-': incompatible types - from 'const void *' to 'char *'
 ..\source\Script.cpp(554): warning C4533: initialization of 'argumentValue' is skipped by 'goto __failure'
   ..\source\Script.cpp(437): note: see declaration of 'argumentValue'
   ..\source\Script.cpp(554): note: see declaration of '__failure'

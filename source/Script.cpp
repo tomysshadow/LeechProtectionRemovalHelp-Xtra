@@ -234,19 +234,19 @@ STDMETHODIMP TStdXtra_IMoaRegister::Register(PIMoaCache pCache, PIMoaXtraEntryDi
 	// register the Method Table
 	const char* VER_MAJORVERSION_STRING = "1";
 	const char* VER_MINORVERSION_STRING = "3";
-	const char* VER_BUGFIXVERSION_STRING = "4";
+	const char* VER_BUGFIXVERSION_STRING = "6";
 
 	sprintf_s(versionStr, VERSION_STR_SIZE, versionInfo, VER_MAJORVERSION_STRING, VER_MINORVERSION_STRING, VER_BUGFIXVERSION_STRING);
 
-	pMemStr = pObj->pCalloc->NRAlloc(strlen(versionStr) + strlen(msgTable) + 1);
+	pMemStr = pObj->pCalloc->NRAlloc(strlen(versionStr) + stringSize(msgTable));
 
 	ThrowNull(pMemStr);
 
-	if (strcpy_s((char*)pMemStr, strlen(versionStr) + 1, versionStr)) {
+	if (strcpy_s((char*)pMemStr, stringSize(versionStr), versionStr)) {
 		TerminateProcess(GetCurrentProcess(), 0);
 		Throw(kMoaErr_NoErr);
 	}
-	if (strcat_s((char*)pMemStr, strlen(versionStr) + strlen(msgTable) + 1, msgTable)) {
+	if (strcat_s((char*)pMemStr, strlen(versionStr) + stringSize(msgTable), msgTable)) {
 		TerminateProcess(GetCurrentProcess(), 0);
 		Throw(kMoaErr_NoErr);
 	}
@@ -463,7 +463,7 @@ MoaError TStdXtra_IMoaMmXScript::XScrpSetExternalParam(PMoaDrCallInfo callPtr, M
 		// and if it was, unset it
 		// start with first External Param Old Name
 		PMoaChar externalParamOldName = externalParamsOld;
-		size_t externalParamOldNameSize = strlen(externalParamOldName) + 1;
+		size_t externalParamOldNameSize = stringSize(externalParamOldName);
 
 		PMoaChar externalParamOldValue = NULL;
 		size_t externalParamOldValueSize = 0;
@@ -473,7 +473,7 @@ MoaError TStdXtra_IMoaMmXScript::XScrpSetExternalParam(PMoaDrCallInfo callPtr, M
 		while (externalParamOldName + externalParamOldNameSize <= externalParamsOld + externalParamsSizeOld && strlen(externalParamOldName)) {
 			// go to next External Param Old Value
 			externalParamOldValue = externalParamOldName + externalParamOldNameSize;
-			externalParamOldValueSize = strlen(externalParamOldValue) + 1;
+			externalParamOldValueSize = stringSize(externalParamOldValue);
 			
 			// if the External Param Old Value exceeds the External Params Old Size
 			if (externalParamOldValue + externalParamOldValueSize > externalParamsOld + externalParamsSizeOld) {
@@ -497,30 +497,30 @@ MoaError TStdXtra_IMoaMmXScript::XScrpSetExternalParam(PMoaDrCallInfo callPtr, M
 			}
 			
 			// go to next External Param Old Name
-			externalParamOldNameSize = strlen(externalParamOldValue + externalParamOldValueSize) + 1;
+			externalParamOldNameSize = stringSize(externalParamOldValue + externalParamOldValueSize);
 			externalParamOldName = externalParamOldValue + externalParamOldValueSize;
 		}
 		externalParamOldName = NULL;
 		externalParamOldValue = NULL;
 		
-		externalParamsSize = strlen(name) + strlen(value) + externalParamsSizeOld + 2;
+		externalParamsSize = stringSize(name) + stringSize(value) + externalParamsSizeOld;
 		externalParams = (PMoaChar)pObj->pCalloc->NRAlloc(externalParamsSize);
 		ThrowNull(externalParams);
-		if (strcpy_s(externalParams, externalParamsSize - strlen(value) - externalParamsSizeOld - 1, name)) {
+		if (strcpy_s(externalParams, externalParamsSize - stringSize(value) - externalParamsSizeOld, name)) {
 			// dangerous - string is in unknown state, so quit
 			callLingoAlert(pObj->pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Set External Param Name");
 			callLingoQuit(pObj->pMoaMmValueInterface, pMoaDrMovieInterface);
 			TerminateProcess(GetCurrentProcess(), 0);
 			Throw(kMoaErr_NoErr);
 		}
-		if (strcpy_s(externalParams + strlen(name) + 1, externalParamsSize - strlen(name) - externalParamsSizeOld - 1, value)) {
+		if (strcpy_s(externalParams + stringSize(name), externalParamsSize - stringSize(name) - externalParamsSizeOld, value)) {
 			// dangerous - string is in unknown state, so quit
 			callLingoAlert(pObj->pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Set External Param Value");
 			callLingoQuit(pObj->pMoaMmValueInterface, pMoaDrMovieInterface);
 			TerminateProcess(GetCurrentProcess(), 0);
 			Throw(kMoaErr_NoErr);
 		}
-		if (memcpy_s(externalParams + strlen(name) + strlen(value) + 2, externalParamsSize - strlen(name) - strlen(value) - 2, externalParamsOld, externalParamsSizeOld)) {
+		if (memcpy_s(externalParams + stringSize(name) + stringSize(value), externalParamsSize - stringSize(name) - stringSize(value), externalParamsOld, externalParamsSizeOld)) {
 			// dangerous - memory is in unknown state, so quit
 			callLingoAlert(pObj->pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Set External Params");
 			callLingoQuit(pObj->pMoaMmValueInterface, pMoaDrMovieInterface);
@@ -528,17 +528,17 @@ MoaError TStdXtra_IMoaMmXScript::XScrpSetExternalParam(PMoaDrCallInfo callPtr, M
 			Throw(kMoaErr_NoErr);
 		}
 	} else {
-		externalParamsSize = strlen(name) + strlen(value) + 4;
+		externalParamsSize = stringSize(name) + stringSize(value) + 2;
 		externalParams = (PMoaChar)pObj->pCalloc->NRAlloc(externalParamsSize);
 		ThrowNull(externalParams);
-		if (strcpy_s(externalParams, externalParamsSize - strlen(value) - 1, name)) {
+		if (strcpy_s(externalParams, externalParamsSize - stringSize(value), name)) {
 			// dangerous - string is in unknown state, so quit
 			callLingoAlert(pObj->pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Set External Param Name");
 			callLingoQuit(pObj->pMoaMmValueInterface, pMoaDrMovieInterface);
 			TerminateProcess(GetCurrentProcess(), 0);
 			Throw(kMoaErr_NoErr);
 		}
-		if (strcpy_s(externalParams + strlen(name) + 1, externalParamsSize - strlen(name) - 1, value)) {
+		if (strcpy_s(externalParams + stringSize(name), externalParamsSize - stringSize(name), value)) {
 			// dangerous - string is in unknown state, so quit
 			callLingoAlert(pObj->pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Set External Param Value");
 			callLingoQuit(pObj->pMoaMmValueInterface, pMoaDrMovieInterface);
