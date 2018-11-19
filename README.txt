@@ -58,8 +58,8 @@ Usage
 
 Message Table
 	-- Set Properties
-	* setTheMoviePath string moviePath -- sets the moviePath (and the path, and the pathName, and _movie.path) property (does not work while debugging a Lingo Script)
-	* setTheMovieName string movieName -- sets the movieName (and the movie, and _movie.name) property (does not work while debugging a Lingo Script)
+	* setTheMoviePath string moviePath -- sets the moviePath (and the path, and the pathName) property (does not work while debugging a Lingo Script)
+	* setTheMovieName string movieName -- sets the movieName (and the movie) property (does not work while debugging a Lingo Script)
 	* setTheEnvironment_shockMachine int environment_shockMachine -- sets the environment.shockMachine (and the environmentPropList.shockMachine) property (does not work while debugging a Lingo Script)
 	* setTheEnvironment_shockMachineVersion string environment_shockMachineVersion -- sets the environment.shockMachineVersion (and the environmentPropList.shockMachineVersion) property (does not work while debugging a Lingo Script)
 	* setThePlatform string platform -- sets the platform (and the environment.platform, and the environmentPropList.platform) property (does not work while debugging a Lingo Script)
