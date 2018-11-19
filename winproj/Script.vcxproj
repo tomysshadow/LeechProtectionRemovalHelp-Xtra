@@ -149,6 +149,7 @@
     <None Include="Script.def" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\..\..\Include\win32\resource.h" />
     <ClInclude Include="..\source\Script.h" />
   </ItemGroup>
   <ItemGroup>

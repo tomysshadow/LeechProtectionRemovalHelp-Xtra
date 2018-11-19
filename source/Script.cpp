@@ -13,24 +13,11 @@ written permission of Adobe.
 
 #define INITGUID 1
 
-#include <windows.h>
-
 #include "script.h"
 
-#include <string.h>
 #pragma function(strlen)
-#include <stdlib.h>
 #include "xclassver.h"
 #include "moatry.h"
-
-#include "driservc.h"
-#include "drivalue.h"
-
-#include "mmivalue.h"
-#include "mmillist.h"
-#include "mmiplist.h"
-#include "mmidate.h"
-#include "mmiclr.h"
 
 
 
@@ -234,7 +221,7 @@ STDMETHODIMP TStdXtra_IMoaRegister::Register(PIMoaCache pCache, PIMoaXtraEntryDi
 	// register the Method Table
 	const char* VER_MAJORVERSION_STRING = "1";
 	const char* VER_MINORVERSION_STRING = "3";
-	const char* VER_BUGFIXVERSION_STRING = "6";
+	const char* VER_BUGFIXVERSION_STRING = "7";
 
 	sprintf_s(versionStr, VERSION_STR_SIZE, versionInfo, VER_MAJORVERSION_STRING, VER_MINORVERSION_STRING, VER_BUGFIXVERSION_STRING);
 
@@ -647,6 +634,7 @@ DWORD theEnvironmentCompareAddress = 0x00000000;
 
 DWORD lingoCallCompareAddress = 0x00000000;
 DWORD lingoCallCompareAddress2 = 0x00000000;
+DWORD lingoCallCompareAddress3 = 0x00000000;
 
 DWORD exceptionHandlerSubroutineAddress = 0x00000000;
 
@@ -1324,8 +1312,6 @@ __declspec(naked) void forceTheSafePlayerExtendedCode8() {
 		shl eax, 00000001h;
 		push eax;
 		call [forceTheSafePlayerExtendedCodeSubroutineAddress4];
-
-		epilogue:
 		jmp [forceTheSafePlayerExtendedCodeReturnAddress];
 	}
 }
@@ -2026,8 +2012,6 @@ __declspec(naked) void forceTheSafePlayerExtendedCode85() {
 		shl ecx, 00000001h;
 		push ecx;
 		call [forceTheSafePlayerExtendedCodeSubroutineAddress4];
-
-		epilogue:
 		jmp [forceTheSafePlayerExtendedCodeReturnAddress];
 	}
 }
@@ -2141,6 +2125,12 @@ __declspec(naked) void setTheMoviePathExtendedCode10() {
 		// compare to Lingo Call for the moviePath
 		mov eax, [esp + 0000093Ch];
 		cmp eax, [lingoCallCompareAddress];
+		jnz compare_to__movie_path;
+		jmp set;
+
+		compare_to__movie_path:
+		mov eax, [esp + 00000838h];
+		cmp eax, [lingoCallCompareAddress3];
 		jnz do_not_set;
 		jmp set;
 
@@ -2209,6 +2199,12 @@ __declspec(naked) void setTheMovieNameExtendedCode10() {
 		// compare to Lingo Call for the movieName
 		mov eax, [esp + 0000082Ch];
 		cmp eax, [lingoCallCompareAddress];
+		jnz compare_to__movie_name;
+		jmp set;
+
+		compare_to__movie_name:
+		mov eax, [esp + 00000728h];
+		cmp eax, [lingoCallCompareAddress3];
 		jnz epilogue;
 		jmp set;
 
@@ -2836,8 +2832,6 @@ __declspec(naked) void forceTheSafePlayerExtendedCode10() {
 		shl ecx, 00000001h;
 		push ecx;
 		call [forceTheSafePlayerExtendedCodeSubroutineAddress4];
-
-		epilogue:
 		jmp [forceTheSafePlayerExtendedCodeReturnAddress];
 	}
 }
@@ -2858,6 +2852,12 @@ __declspec(naked) void setTheMoviePathExtendedCode101() {
 		// compare to Lingo Call for the moviePath
 		mov eax, [esp + 00000940h];
 		cmp eax, [lingoCallCompareAddress];
+		jnz compare_to__movie_path;
+		jmp set;
+
+		compare_to__movie_path:
+		mov eax, [esp + 0000083Ch];
+		cmp eax, [lingoCallCompareAddress3];
 		jnz do_not_set;
 		jmp set;
 
@@ -2926,6 +2926,12 @@ __declspec(naked) void setTheMovieNameExtendedCode101() {
 		// compare to Lingo Call for the movieName
 		mov eax, [esp + 00000830h];
 		cmp eax, [lingoCallCompareAddress];
+		jnz compare_to__movie_name;
+		jmp set;
+
+		compare_to__movie_name:
+		mov eax, [esp + 0000072Ch];
+		cmp eax, [lingoCallCompareAddress3];
 		jnz epilogue;
 		jmp set;
 
@@ -3023,6 +3029,12 @@ __declspec(naked) void setTheMoviePathExtendedCode11() {
 		// compare to Lingo Call for the moviePath
 		mov eax, [esp + 00001D14h];
 		cmp eax, [lingoCallCompareAddress];
+		jnz compare_to__movie_path;
+		jmp set;
+
+		compare_to__movie_path:
+		mov eax, [esp + 00001900h];
+		cmp eax, [lingoCallCompareAddress3];
 		jnz do_not_set;
 		jmp set;
 
@@ -3100,6 +3112,12 @@ __declspec(naked) void setTheMovieNameExtendedCode11() {
 		// compare to Lingo Call for the movieName
 		mov eax, [esp + 00001D08h];
 		cmp eax, [lingoCallCompareAddress];
+		jnz compare_to__movie_name;
+		jmp set;
+
+		compare_to__movie_name:
+		mov eax, [esp + 000018F4h];
+		cmp eax, [lingoCallCompareAddress3];
 		jnz do_not_set;
 		jmp set;
 
@@ -3771,8 +3789,6 @@ __declspec(naked) void forceTheSafePlayerExtendedCode11() {
 		shl ecx, 00000001h;
 		push ecx;
 		call [forceTheSafePlayerExtendedCodeSubroutineAddress4];
-
-		epilogue:
 		jmp [forceTheSafePlayerExtendedCodeReturnAddress];
 	}
 }
@@ -3953,6 +3969,12 @@ __declspec(naked) void setTheMoviePathExtendedCode1159() {
 		// compare to Lingo Call for the moviePath
 		mov eax, [esp + 00001D14h];
 		cmp eax, [lingoCallCompareAddress];
+		jnz compare_to__movie_path;
+		jmp set;
+
+		compare_to__movie_path:
+		mov eax, [esp + 00001900h];
+		cmp eax, [lingoCallCompareAddress3];
 		jnz do_not_set;
 		jmp set;
 
@@ -3994,7 +4016,7 @@ __declspec(naked) void setTheMoviePathExtendedCode1159() {
 		// restore EAX
 		pop eax;
 		// EBP is a pointer to the string length
-		mov[ebp], bl;
+		mov [ebp], bl;
 		jmp epilogue;
 
 		do_not_set:
@@ -4030,6 +4052,12 @@ __declspec(naked) void setTheMovieNameExtendedCode1159() {
 		// compare to Lingo Call for the movieName
 		mov eax, [esp + 00001D08h];
 		cmp eax, [lingoCallCompareAddress];
+		jnz compare_to__movie_name;
+		jmp set;
+
+		compare_to__movie_name:
+		mov eax, [esp + 000018F4h];
+		cmp eax, [lingoCallCompareAddress3];
 		jnz do_not_set;
 		jmp set;
 
@@ -4167,6 +4195,12 @@ __declspec(naked) void setTheMoviePathExtendedCode12() {
 		// compare to Lingo Call for the moviePath
 		mov eax, [esp + 00001D38h];
 		cmp eax, [lingoCallCompareAddress];
+		jnz compare_to__movie_path;
+		jmp set;
+
+		compare_to__movie_path:
+		mov eax, [esp + 0000191Ch];
+		cmp eax, [lingoCallCompareAddress3];
 		jnz do_not_set;
 		jmp set;
 
@@ -4247,6 +4281,12 @@ __declspec(naked) void setTheMovieNameExtendedCode12() {
 		// compare to Lingo Call for the movieName
 		mov eax, [esp + 00001D2Ch];
 		cmp eax, [lingoCallCompareAddress];
+		jnz compare_to__movie_name;
+		jmp set;
+
+		compare_to__movie_name:
+		mov eax, [esp + 00001910h];
+		cmp eax, [lingoCallCompareAddress3];
 		jnz do_not_set;
 		jmp set;
 
@@ -4955,8 +4995,6 @@ __declspec(naked) void forceTheSafePlayerExtendedCode12() {
 		shl ecx, 00000001h;
 		push ecx;
 		call [forceTheSafePlayerExtendedCodeSubroutineAddress4];
-
-		epilogue:
 		jmp [forceTheSafePlayerExtendedCodeReturnAddress];
 	}
 }
@@ -5544,6 +5582,7 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				setThePathNameExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000B2E8D);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000D7059);
 				lingoCallCompareAddress2 = createExtendedCodeAddress(moduleHandle, 0x000D7463);
+				lingoCallCompareAddress3 = createExtendedCodeAddress(moduleHandle, 0x000D712F);
 				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x0000D3E9, setTheMoviePathExtendedCode10);
 				break;
 				case m_setTheMovieName:
@@ -5551,6 +5590,7 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				setTheMovieExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000B2E52);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000D7059);
 				lingoCallCompareAddress2 = createExtendedCodeAddress(moduleHandle, 0x000D7463);
+				lingoCallCompareAddress3 = createExtendedCodeAddress(moduleHandle, 0x000D712F);
 				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x0000D2F0, setTheMovieNameExtendedCode10);
 				break;
 				case m_setTheEnvironment_shockMachine:
@@ -5664,6 +5704,7 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				setThePathNameExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000B41FF);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000D8449);
 				lingoCallCompareAddress2 = createExtendedCodeAddress(moduleHandle, 0x000D8853);
+				lingoCallCompareAddress3 = createExtendedCodeAddress(moduleHandle, 0x000D851F);
 				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x0000D4B4, setTheMoviePathExtendedCode101);
 				break;
 				case m_setTheMovieName:
@@ -5671,6 +5712,7 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				setTheMovieExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000B41C4);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000D8449);
 				lingoCallCompareAddress2 = createExtendedCodeAddress(moduleHandle, 0x000D8853);
+				lingoCallCompareAddress3 = createExtendedCodeAddress(moduleHandle, 0x000D851F);
 				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x0000D3BB, setTheMovieNameExtendedCode101);
 				break;
 				case m_setTheEnvironment_shockMachine:
@@ -5784,6 +5826,7 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				setThePathNameExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000DFAB9);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x001103ED);
 				lingoCallCompareAddress2 = createExtendedCodeAddress(moduleHandle, 0x00110805);
+				lingoCallCompareAddress3 = createExtendedCodeAddress(moduleHandle, 0x001104BB);
 				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x00010979, setTheMoviePathExtendedCode11);
 				break;
 				case m_setTheMovieName:
@@ -5791,6 +5834,7 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				setTheMovieExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000DFA79);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x001103ED);
 				lingoCallCompareAddress2 = createExtendedCodeAddress(moduleHandle, 0x00110805);
+				lingoCallCompareAddress3 = createExtendedCodeAddress(moduleHandle, 0x001104BB);
 				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000108AB, setTheMovieNameExtendedCode11);
 				break;
 				case m_setTheEnvironment_shockMachine:
@@ -5904,6 +5948,7 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				setThePathNameExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000DFA49);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x0011037D);
 				lingoCallCompareAddress2 = createExtendedCodeAddress(moduleHandle, 0x00110795);
+				lingoCallCompareAddress3 = createExtendedCodeAddress(moduleHandle, 0x0011044B);
 				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000109A9, setTheMoviePathExtendedCode1103);
 				break;
 				case m_setTheMovieName:
@@ -5911,6 +5956,7 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				setTheMovieExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000DFA09);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x0011037D);
 				lingoCallCompareAddress2 = createExtendedCodeAddress(moduleHandle, 0x00110795);
+				lingoCallCompareAddress3 = createExtendedCodeAddress(moduleHandle, 0x0011044B);
 				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000108DB, setTheMovieNameExtendedCode1103);
 				break;
 				case m_setTheEnvironment_shockMachine:
@@ -6024,6 +6070,7 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				setThePathNameExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000E1BF9);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x00112FDD);
 				lingoCallCompareAddress2 = createExtendedCodeAddress(moduleHandle, 0x001133F5);
+				lingoCallCompareAddress3 = createExtendedCodeAddress(moduleHandle, 0x001130AB);
 				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x00010B19, setTheMoviePathExtendedCode115);
 				break;
 				case m_setTheMovieName:
@@ -6031,7 +6078,8 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				setTheMovieExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000E1BB9);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x00112FDD);
 				lingoCallCompareAddress2 = createExtendedCodeAddress(moduleHandle, 0x001133F5);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x00010A41, setTheMovieNameExtendedCode115);
+				lingoCallCompareAddress3 = createExtendedCodeAddress(moduleHandle, 0x001130AB);
+				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x00010A4B, setTheMovieNameExtendedCode115);
 				break;
 				case m_setTheEnvironment_shockMachine:
 				setTheEnvironment_shockMachineExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x000DBD4A);
@@ -6144,6 +6192,7 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				setThePathNameExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000E2779 - 0x00000010);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x00113BA7);
 				lingoCallCompareAddress2 = createExtendedCodeAddress(moduleHandle, 0x00113FC5);
+				lingoCallCompareAddress3 = createExtendedCodeAddress(moduleHandle, 0x00113C75);
 				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x00010E19, setTheMoviePathExtendedCode1158);
 				break;
 				case m_setTheMovieName:
@@ -6151,6 +6200,7 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				setTheMovieExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000E2729);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x00113BA7);
 				lingoCallCompareAddress2 = createExtendedCodeAddress(moduleHandle, 0x00113FC5);
+				lingoCallCompareAddress3 = createExtendedCodeAddress(moduleHandle, 0x00113C75);
 				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x00010D4B, setTheMovieNameExtendedCode1158);
 				break;
 				case m_setTheEnvironment_shockMachine:
@@ -6264,6 +6314,7 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				setThePathNameExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000E3929);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x001161ED);
 				lingoCallCompareAddress2 = createExtendedCodeAddress(moduleHandle, 0x00116616);
+				lingoCallCompareAddress3 = createExtendedCodeAddress(moduleHandle, 0x001162BB);
 				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x00010FB9, setTheMoviePathExtendedCode1159);
 				break;
 				case m_setTheMovieName:
@@ -6271,6 +6322,7 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				setTheMovieExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000E38E9);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x001161ED);
 				lingoCallCompareAddress2 = createExtendedCodeAddress(moduleHandle, 0x00116616);
+				lingoCallCompareAddress3 = createExtendedCodeAddress(moduleHandle, 0x001162BB);
 				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x00010EEB, setTheMovieNameExtendedCode1159);
 				break;
 				case m_setTheEnvironment_shockMachine:
@@ -6384,6 +6436,7 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				setThePathNameExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x00018D64);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000363FC);
 				lingoCallCompareAddress2 = createExtendedCodeAddress(moduleHandle, 0x000367C8);
+				lingoCallCompareAddress3 = createExtendedCodeAddress(moduleHandle, 0x000364BC);
 				exceptionHandlerSubroutineAddress = createExtendedCodeAddress(moduleHandle, 0x00001762);
 				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000621F7, setTheMoviePathExtendedCode12);
 				break;
@@ -6392,6 +6445,7 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				setTheMovieExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x00018D04);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000363FC);
 				lingoCallCompareAddress2 = createExtendedCodeAddress(moduleHandle, 0x000367C8);
+				lingoCallCompareAddress3 = createExtendedCodeAddress(moduleHandle, 0x000364BC);
 				exceptionHandlerSubroutineAddress = createExtendedCodeAddress(moduleHandle, 0x00001762);
 				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x00062104, setTheMovieNameExtendedCode12);
 				break;

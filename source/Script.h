@@ -18,9 +18,7 @@ written permission of Adobe.
 #include <Dbghelp.h>
 #include <string.h>
 
-#include "moastdif.h"
 #include "xmmvalue.h"
-#include "mmiutil.h"
 
 
 
