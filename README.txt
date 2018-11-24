@@ -1,4 +1,4 @@
-LeechProtectionRemovalHelp Xtra 1.3.7
+LeechProtectionRemovalHelp Xtra 1.3.8
 By Anthony Kleine
 
 	This Director Xtra allows for the archival of Shockwave Movies
@@ -57,24 +57,25 @@ Usage
 
 
 Message Table
-	-- Set Properties
-	* setTheMoviePath string moviePath -- sets the moviePath (and the path, and the pathName) property (does not work while debugging a Lingo Script)
-	* setTheMovieName string movieName -- sets the movieName (and the movie) property (does not work while debugging a Lingo Script)
-	* setTheEnvironment_shockMachine int environment_shockMachine -- sets the environment.shockMachine (and the environmentPropList.shockMachine) property (does not work while debugging a Lingo Script)
-	* setTheEnvironment_shockMachineVersion string environment_shockMachineVersion -- sets the environment.shockMachineVersion (and the environmentPropList.shockMachineVersion) property (does not work while debugging a Lingo Script)
-	* setThePlatform string platform -- sets the platform (and the environment.platform, and the environmentPropList.platform) property (does not work while debugging a Lingo Script)
-	* setTheRunMode string runMode -- sets the runMode (and the environment.runMode, and the environmentPropList.runMode) property (does not work while debugging a Lingo Script)
-	* setTheEnvironment_productBuildVersion string environment_productBuildVersion -- sets the environment.productBuildVersion (and the environmentPropList.productBuildVersion) property (does not work while debugging a Lingo Script)
-	* setTheProductVersion string productVersion -- sets the productVersion (and the environment.productVersion, and the environmentPropList.productVersion) property (does not work while debugging a Lingo Script)
-	* setTheEnvironment_osVersion string environment_osVersion -- sets the environment.osVersion (and the environmentPropList.osVersion) property (does not work while debugging a Lingo Script)
-	* setTheMachineType int machineType -- sets the machineType property (does not work while debugging a Lingo Script)
-	-- Force Properties
-	* forceTheExitLock int exitLock -- forces the exitLock property
-	* forceTheSafePlayer int safePlayer -- forces the safePlayer property
-	-- Set External Params
+	new object me
+	-- Set Properties --
+	* setTheMoviePath string moviePath -- sets the moviePath (and the path, and the pathName, and _movie.path) property (does not work while debugging a Lingo Script)
+	* setTheMovieName string movieName -- sets the movieName (and the movie, and _movie.name) property (does not work while debugging a Lingo Script)
+	* setTheEnvironment_shockMachine integer environment_shockMachine -- sets the environment.shockMachine (and the environmentPropList.shockMachine, and _system.environmentPropList.shockMachine) property (does not work while debugging a Lingo Script)
+	* setTheEnvironment_shockMachineVersion string environment_shockMachineVersion -- sets the environment.shockMachineVersion (and the environmentPropList.shockMachineVersion, and _system.environmentPropList.shockMachineVersion) property (does not work while debugging a Lingo Script)
+	* setThePlatform string platform -- sets the platform (and the environment.platform, and the environmentPropList.platform, and _system.environmentPropList.platform) property (does not work while debugging a Lingo Script)
+	* setTheRunMode string runMode -- sets the runMode (and the environment.runMode, and the environmentPropList.runMode, and _system.environmentPropList.runMode, and _player.runMode) property (does not work while debugging a Lingo Script)
+	* setTheEnvironment_productBuildVersion string environment_productBuildVersion -- sets the environment.productBuildVersion (and the environmentPropList.productBuildVersion, and _system.environmentPropList.productBuildVersion) property (does not work while debugging a Lingo Script)
+	* setTheProductVersion string productVersion -- sets the productVersion (and the environment.productVersion, and the environmentPropList.productVersion, and _system.environmentPropList.productVersion, and _player.productVersion) property (does not work while debugging a Lingo Script)
+	* setTheEnvironment_osVersion string environment_osVersion -- sets the environment.osVersion (and the environmentPropList.osVersion, and _system.environmentPropList.osVersion) property (does not work while debugging a Lingo Script)
+	* setTheMachineType integer machineType -- sets the machineType property (does not work while debugging a Lingo Script)
+	-- Force Properties --
+	* forceTheExitLock integer exitLock -- forces the exitLock property
+	* forceTheSafePlayer integer safePlayer -- forces the safePlayer property
+	-- Set External Params --
 	* setExternalParam string name, string value -- sets an External Param (name cannot be empty)
-	-- Disable Functions
+	-- Disable Functions --
 	* disableGoToNetMovie -- disables goToNetMovie (does not work during authoring)
 	* disableGoToNetPage -- disables goToNetPage (does not work during authoring)
-	-- Bugfixes
+	-- Bugfixes --
 	* bugfixShockwave3DBadDriverList -- bugfixes Shockwave 3D Bad Driver List (does not work during authoring)

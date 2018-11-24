@@ -83,15 +83,15 @@ static char versionInfo[] = "xtra LeechProtectionRemovalHelp -- version %s.%s.%s
 static char msgTable[] = {
 	"new object me\n" /* standard first handler entry in all message tables */
 	"-- Set Properties --\n"
-	"* setTheMoviePath string moviePath -- sets the moviePath (and the path, and the pathName) property (does not work while debugging a Lingo Script)\n"
-	"* setTheMovieName string movieName -- sets the movieName (and the movie) property (does not work while debugging a Lingo Script)\n"
-	"* setTheEnvironment_shockMachine integer environment_shockMachine -- sets the environment.shockMachine (and the environmentPropList.shockMachine) property (does not work while debugging a Lingo Script)\n"
-	"* setTheEnvironment_shockMachineVersion string environment_shockMachineVersion -- sets the environment.shockMachineVersion (and the environmentPropList.shockMachineVersion) property (does not work while debugging a Lingo Script)\n"
-	"* setThePlatform string platform -- sets the platform (and the environment.platform, and the environmentPropList.platform) property (does not work while debugging a Lingo Script)\n"
-	"* setTheRunMode string runMode -- sets the runMode (and the environment.runMode, and the environmentPropList.runMode) property (does not work while debugging a Lingo Script)\n"
-	"* setTheEnvironment_productBuildVersion string environment_productBuildVersion -- sets the environment.productBuildVersion (and the environmentPropList.productBuildVersion) property (does not work while debugging a Lingo Script)\n"
-	"* setTheProductVersion string productVersion -- sets the productVersion (and the environment.productVersion, and the environmentPropList.productVersion) property (does not work while debugging a Lingo Script)\n"
-	"* setTheEnvironment_osVersion string environment_osVersion -- sets the environment.osVersion (and the environmentPropList.osVersion) property (does not work while debugging a Lingo Script)\n"
+	"* setTheMoviePath string moviePath -- sets the moviePath (and the path, and the pathName, and _movie.path) property (does not work while debugging a Lingo Script)\n"
+	"* setTheMovieName string movieName -- sets the movieName (and the movie, and _movie.name) property (does not work while debugging a Lingo Script)\n"
+	"* setTheEnvironment_shockMachine integer environment_shockMachine -- sets the environment.shockMachine (and the environmentPropList.shockMachine, and _system.environmentPropList.shockMachine) property (does not work while debugging a Lingo Script)\n"
+	"* setTheEnvironment_shockMachineVersion string environment_shockMachineVersion -- sets the environment.shockMachineVersion (and the environmentPropList.shockMachineVersion, and _system.environmentPropList.shockMachineVersion) property (does not work while debugging a Lingo Script)\n"
+	"* setThePlatform string platform -- sets the platform (and the environment.platform, and the environmentPropList.platform, and _system.environmentPropList.platform) property (does not work while debugging a Lingo Script)\n"
+	"* setTheRunMode string runMode -- sets the runMode (and the environment.runMode, and the environmentPropList.runMode, and _system.environmentPropList.runMode, and _player.runMode) property (does not work while debugging a Lingo Script)\n"
+	"* setTheEnvironment_productBuildVersion string environment_productBuildVersion -- sets the environment.productBuildVersion (and the environmentPropList.productBuildVersion, and _system.environmentPropList.productBuildVersion) property (does not work while debugging a Lingo Script)\n"
+	"* setTheProductVersion string productVersion -- sets the productVersion (and the environment.productVersion, and the environmentPropList.productVersion, and _system.environmentPropList.productVersion, and _player.productVersion) property (does not work while debugging a Lingo Script)\n"
+	"* setTheEnvironment_osVersion string environment_osVersion -- sets the environment.osVersion (and the environmentPropList.osVersion, and _system.environmentPropList.osVersion) property (does not work while debugging a Lingo Script)\n"
 	"* setTheMachineType integer machineType -- sets the machineType property (does not work while debugging a Lingo Script)\n"
 	"-- Force Properties --\n"
 	"* forceTheExitLock integer exitLock -- forces the exitLock property\n"
@@ -221,7 +221,7 @@ STDMETHODIMP TStdXtra_IMoaRegister::Register(PIMoaCache pCache, PIMoaXtraEntryDi
 	// register the Method Table
 	const char* VER_MAJORVERSION_STRING = "1";
 	const char* VER_MINORVERSION_STRING = "3";
-	const char* VER_BUGFIXVERSION_STRING = "7";
+	const char* VER_BUGFIXVERSION_STRING = "8";
 
 	sprintf_s(versionStr, VERSION_STR_SIZE, versionInfo, VER_MAJORVERSION_STRING, VER_MINORVERSION_STRING, VER_BUGFIXVERSION_STRING);
 
@@ -635,6 +635,7 @@ DWORD theEnvironmentCompareAddress = 0x00000000;
 DWORD lingoCallCompareAddress = 0x00000000;
 DWORD lingoCallCompareAddress2 = 0x00000000;
 DWORD lingoCallCompareAddress3 = 0x00000000;
+DWORD lingoCallCompareAddress4 = 0x00000000;
 
 DWORD exceptionHandlerSubroutineAddress = 0x00000000;
 
@@ -2267,8 +2268,15 @@ __declspec(naked) void setTheEnvironment_shockMachineExtendedCode10() {
 		// compare to Lingo Call for the environment.shockMachine
 		mov eax, [esp + 000004B8h];
 		cmp eax, [lingoCallCompareAddress];
+		jnz compare_to__system_environmentproplist_shockmachine;
+		jmp set;
+
+		compare_to__system_environmentproplist_shockmachine:
+		mov eax, [esp + 000003A4h];
+		cmp eax, [lingoCallCompareAddress4];
 		jnz do_not_set;
 
+		set:
 		// restore EAX
 		pop eax;
 		mov eax, [theEnvironment_shockMachine];
@@ -2297,8 +2305,15 @@ __declspec(naked) void setTheEnvironment_shockMachineVersionExtendedCode10() {
 		// compare to Lingo Call for the environment.shockMachineVersion
 		mov eax, [esp + 000004B4h];
 		cmp eax, [lingoCallCompareAddress];
+		jnz compare_to__system_environmentproplist_shockmachineversion;
+		jmp set;
+
+		compare_to__system_environmentproplist_shockmachineversion:
+		mov eax, [esp + 000003A0h];
+		cmp eax, [lingoCallCompareAddress4];
 		jnz epilogue;
 
+		set:
 		push [THE_ENVIRONMENT_SHOCK_MACHINE_VERSION_SIZE]; // num
 		lea eax, [theEnvironment_shockMachineVersion];
 		push eax; // source/str
@@ -2340,6 +2355,12 @@ __declspec(naked) void setThePlatformExtendedCode10() {
 		// compare to Lingo Call for the environment.platform
 		mov eax, [esp + 000008CCh];
 		cmp eax, [lingoCallCompareAddress];
+		jnz compare_to__system_environmentproplist_platform;
+		jmp set;
+
+		compare_to__system_environmentproplist_platform:
+		mov eax, [esp + 000007B8h];
+		cmp eax, [lingoCallCompareAddress4];
 		jnz do_not_set;
 
 		set:
@@ -2373,8 +2394,15 @@ __declspec(naked) void setTheRunModeExtendedCode10() {
 		// compare to Lingo Call for the runMode
 		mov eax, [esp + 000003DCh];
 		cmp eax, [lingoCallCompareAddress];
+		jnz compare_to__player_runmode;
+		jmp set;
+
+		compare_to__player_runmode:
+		mov eax, [esp + 000002D4h];
+		cmp eax, [lingoCallCompareAddress3];
 		jnz do_not_set;
 
+		set:
 		// restore EAX
 		pop eax;
 
@@ -2415,8 +2443,15 @@ __declspec(naked) void setTheEnvironment_runModeExtendedCode10() {
 		// compare to Lingo Call for the environment.runMode
 		mov eax, [esp + 000004B8h];
 		cmp eax, [lingoCallCompareAddress];
+		jnz compare_to__system_environmentproplist_runmode;
+		jmp set;
+
+		compare_to__system_environmentproplist_runmode:
+		mov eax, [esp + 000003A4h];
+		cmp eax, [lingoCallCompareAddress4];
 		jnz do_not_set;
 
+		set:
 		// restore EAX
 		pop eax;
 		push ecx;
@@ -2457,8 +2492,15 @@ __declspec(naked) void setTheEnvironment_productBuildVersionExtendedCode10() {
 		// compare to Lingo Call for the productBuildVersion
 		mov eax, [esp + 000005FCh];
 		cmp eax, [lingoCallCompareAddress];
+		jnz compare_to__system_environmentproplist_productbuildversion;
+		jmp set;
+
+		compare_to__system_environmentproplist_productbuildversion:
+		mov eax, [esp + 000004E8h];
+		cmp eax, [lingoCallCompareAddress4];
 		jnz do_not_set;
 
+		set:
 		// restore EAX
 		pop eax;
 
@@ -2497,8 +2539,15 @@ __declspec(naked) void setTheProductVersionExtendedCode10() {
 		// compare to Lingo Call for the productVersion
 		mov eax, [esp + 000003D8h];
 		cmp eax, [lingoCallCompareAddress];
+		jnz compare_to__player_productversion;
+		jmp set;
+
+		compare_to__player_productversion:
+		mov eax, [esp + 000002D0h];
+		cmp eax, [lingoCallCompareAddress3];
 		jnz epilogue;
 
+		set:
 		// copy the string
 		push [THE_PRODUCT_VERSION_SIZE]; // num
 		lea eax, [theProductVersion];
@@ -2529,8 +2578,15 @@ __declspec(naked) void setTheEnvironment_productVersionExtendedCode10() {
 		// compare to Lingo Call for the environment.productVersion
 		mov eax, [esp + 000004B4h];
 		cmp eax, [lingoCallCompareAddress];
+		jnz compare_to__system_environmentproplist_productversion;
+		jmp set;
+
+		compare_to__system_environmentproplist_productversion:
+		mov eax, [esp + 000003A0h];
+		cmp eax, [lingoCallCompareAddress4];
 		jnz epilogue;
 
+		set:
 		// copy the string
 		push [THE_PRODUCT_VERSION_SIZE]; // num
 		lea eax, [theProductVersion];
@@ -2563,8 +2619,15 @@ __declspec(naked) void setTheEnvironment_osVersionExtendedCode10() {
 		// compare to Lingo Call for the environment.osVersion
 		mov eax, [esp + 000008C8h];
 		cmp eax, [lingoCallCompareAddress];
+		jnz compare_to__system_environmentproplist_osversion;
+		jmp set;
+
+		compare_to__system_environmentproplist_osversion:
+		mov eax, [esp + 000007B4h];
+		cmp eax, [lingoCallCompareAddress4];
 		jnz do_not_set;
 
+		set:
 		lea eax, [theEnvironment_osVersion];
 		jmp epilogue;
 
@@ -3193,8 +3256,15 @@ __declspec(naked) void setTheEnvironment_shockMachineExtendedCode11() {
 		// compare to Lingo Call for the environment.shockMachine
 		mov eax, [esp + 00000DACh];
 		cmp eax, [lingoCallCompareAddress];
+		jnz compare_to__system_environmentproplist_shockmachine;
+		jmp set;
+
+		compare_to__system_environmentproplist_shockmachine:
+		mov eax, [esp + 00000994h];
+		cmp eax, [lingoCallCompareAddress4];
 		jnz do_not_set;
 
+		set:
 		// restore EAX
 		pop eax;
 		push [theEnvironment_shockMachine];
@@ -3220,8 +3290,15 @@ __declspec(naked) void setTheEnvironment_shockMachineVersionExtendedCode11() {
 		// compare to Lingo Call for the environment.shockMachineVersion
 		mov eax, [esp + 00000DB4h];
 		cmp eax, [lingoCallCompareAddress];
+		jnz compare_to__system_environmentproplist_shockmachineversion;
+		jmp set;
+
+		compare_to__system_environmentproplist_shockmachineversion:
+		mov eax, [esp + 0000099Ch];
+		cmp eax, [lingoCallCompareAddress4];
 		jnz do_not_set;
 
+		set:
 		push [THE_ENVIRONMENT_SHOCK_MACHINE_VERSION_SIZE]; // num
 		lea eax, [theEnvironment_shockMachineVersion];
 		push eax; // source/str
@@ -3266,6 +3343,12 @@ __declspec(naked) void setThePlatformExtendedCode11() {
 		// compare to Lingo Call for the environment.platform
 		mov eax, [esp + 000011B8h];
 		cmp eax, [lingoCallCompareAddress];
+		jnz compare_to__system_environmentproplist_platform;
+		jmp set;
+
+		compare_to__system_environmentproplist_platform:
+		mov eax, [esp + 00000DA0h];
+		cmp eax, [lingoCallCompareAddress4];
 		jnz do_not_set;
 
 		set:
@@ -3299,8 +3382,15 @@ __declspec(naked) void setTheRunModeExtendedCode11() {
 		// compare to Lingo Call for the runMode
 		mov eax, [esp + 00000CC8h];
 		cmp eax, [lingoCallCompareAddress];
+		jnz compare_to__player_runmode;
+		jmp set;
+
+		compare_to__player_runmode:
+		mov eax, [esp + 000008B4h];
+		cmp eax, [lingoCallCompareAddress3];
 		jnz do_not_set;
 
+		set:
 		// restore EAX
 		pop eax;
 
@@ -3342,8 +3432,15 @@ __declspec(naked) void setTheEnvironment_runModeExtendedCode11() {
 		// compare to Lingo Call for the environment.runMode
 		mov eax, [esp + 00000DA8h];
 		cmp eax, [lingoCallCompareAddress];
+		jnz compare_to__system_environmentproplist_runmode;
+		jmp set;
+
+		compare_to__system_environmentproplist_runmode:
+		mov eax, [esp + 00000990h];
+		cmp eax, [lingoCallCompareAddress4];
 		jnz do_not_set;
 
+		set:
 		// restore EAX
 		pop eax;
 
@@ -3382,8 +3479,15 @@ __declspec(naked) void setTheEnvironment_productBuildVersionExtendedCode11() {
 		// compare to Lingo Call for the productBuildVersion
 		mov eax, [esp + 000011E4h];
 		cmp eax, [lingoCallCompareAddress];
+		jnz compare_to__system_environmentproplist_productbuildversion;
+		jmp set;
+
+		compare_to__system_environmentproplist_productbuildversion:
+		mov eax, [esp + 00000DCCh];
+		cmp eax, [lingoCallCompareAddress4];
 		jnz do_not_set;
 
+		set:
 		// restore EAX
 		pop eax;
 
@@ -3423,8 +3527,15 @@ __declspec(naked) void setTheProductVersionExtendedCode11() {
 		// compare to Lingo Call for the productVersion
 		mov eax, [esp + 00000CC4h];
 		cmp eax, [lingoCallCompareAddress];
+		jnz compare_to__player_productversion;
+		jmp set;
+
+		compare_to__player_productversion:
+		mov eax, [esp + 000008B0h];
+		cmp eax, [lingoCallCompareAddress3];
 		jnz epilogue;
 
+		set:
 		// copy the string
 		push [THE_PRODUCT_VERSION_SIZE]; // num
 		lea eax, [theProductVersion];
@@ -3459,8 +3570,15 @@ __declspec(naked) void setTheEnvironment_productVersionExtendedCode11() {
 		// compare to Lingo Call for the environment.productVersion
 		mov eax, [esp + 00000DA8h];
 		cmp eax, [lingoCallCompareAddress];
+		jnz compare_to__system_environmentproplist_productversion;
+		jmp set;
+
+		compare_to__system_environmentproplist_productversion:
+		mov eax, [esp + 00000990h];
+		cmp eax, [lingoCallCompareAddress4];
 		jnz do_not_set;
 
+		set:
 		// restore EAX
 		pop eax;
 		lea edx, [esp + 00000020h];
@@ -3503,8 +3621,15 @@ __declspec(naked) void setTheEnvironment_osVersionExtendedCode11() {
 		// compare to Lingo Call for the environment.osVersion
 		mov eax, [esp + 000011B8h];
 		cmp eax, [lingoCallCompareAddress];
+		jnz compare_to__system_environmentproplist_osversion;
+		jmp set;
+
+		compare_to__system_environmentproplist_osversion:
+		mov eax, [esp + 00000DA0h];
+		cmp eax, [lingoCallCompareAddress4];
 		jnz do_not_set;
 
+		set:
 		lea edx, [theEnvironment_osVersion];
 		jmp epilogue;
 
@@ -4366,8 +4491,15 @@ __declspec(naked) void setTheEnvironment_shockMachineExtendedCode12() {
 		// compare to Lingo Call for the environment.shockMachine
 		mov eax, [esp + 00000DC0h];
 		cmp eax, [lingoCallCompareAddress];
+		jnz compare_to__system_environmentproplist_shockmachine;
+		jmp set;
+
+		compare_to__system_environmentproplist_shockmachine:
+		mov eax, [esp + 000009A4h];
+		cmp eax, [lingoCallCompareAddress4];
 		jnz do_not_set;
 
+		set:
 		// restore EAX
 		pop eax;
 		push [theEnvironment_shockMachine];
@@ -4393,8 +4525,15 @@ __declspec(naked) void setTheEnvironment_shockMachineVersionExtendedCode12() {
 		// compare to Lingo Call for the environment.shockMachineVersion
 		mov eax, [esp + 00000DC8h];
 		cmp eax, [lingoCallCompareAddress];
+		jnz compare_to__system_environmentproplist_shockmachineversion;
+		jmp set;
+
+		compare_to__system_environmentproplist_shockmachineversion:
+		mov eax, [esp + 000009ACh];
+		cmp eax, [lingoCallCompareAddress4];
 		jnz do_not_set;
 
+		set:
 		push [THE_ENVIRONMENT_SHOCK_MACHINE_VERSION_SIZE]; // num
 		lea eax, [theEnvironment_shockMachineVersion];
 		push eax; // source/str
@@ -4439,6 +4578,12 @@ __declspec(naked) void setThePlatformExtendedCode12() {
 		// compare to Lingo Call for the environment.platform
 		mov eax, [esp + 000011DCh];
 		cmp eax, [lingoCallCompareAddress];
+		jnz compare_to__system_environmentproplist_platform;
+		jmp set;
+
+		compare_to__system_environmentproplist_platform:
+		mov eax, [esp + 00000DC0h];
+		cmp eax, [lingoCallCompareAddress4];
 		jnz do_not_set;
 
 		set:
@@ -4472,8 +4617,15 @@ __declspec(naked) void setTheRunModeExtendedCode12() {
 		// compare to Lingo Call for the runMode
 		mov eax, [esp + 00000CECh];
 		cmp eax, [lingoCallCompareAddress];
+		jnz compare_to__player_runmode;
+		jmp set;
+
+		compare_to__player_runmode:
+		mov eax, [esp + 000008D0h];
+		cmp eax, [lingoCallCompareAddress3];
 		jnz do_not_set;
 
+		set:
 		// restore EAX
 		pop eax;
 
@@ -4518,8 +4670,15 @@ __declspec(naked) void setTheEnvironment_runModeExtendedCode12() {
 		// compare to Lingo Call for the environment.runMode
 		mov eax, [esp + 00000DBCh];
 		cmp eax, [lingoCallCompareAddress];
+		jnz compare_to__system_environmentproplist_runmode;
+		jmp set;
+
+		compare_to__system_environmentproplist_runmode:
+		mov eax, [esp + 000009A0h];
+		cmp eax, [lingoCallCompareAddress4];
 		jnz do_not_set;
 
+		set:
 		// restore EAX
 		pop eax;
 
@@ -4558,8 +4717,15 @@ __declspec(naked) void setTheEnvironment_productBuildVersionExtendedCode12() {
 		// compare to Lingo Call for the productBuildVersion
 		mov eax, [esp + 00001200h];
 		cmp eax, [lingoCallCompareAddress];
+		jnz compare_to__system_environmentproplist_productbuildversion;
+		jmp set;
+
+		compare_to__system_environmentproplist_productbuildversion:
+		mov eax, [esp + 00000DE4h];
+		cmp eax, [lingoCallCompareAddress4];
 		jnz do_not_set;
 
+		set:
 		// restore EAX
 		pop eax;
 
@@ -4602,8 +4768,15 @@ __declspec(naked) void setTheProductVersionExtendedCode12() {
 		// compare to Lingo Call for the productVersion
 		mov eax, [esp + 00000CE8h];
 		cmp eax, [lingoCallCompareAddress];
+		jnz compare_to__player_productversion;
+		jmp set;
+
+		compare_to__player_productversion:
+		mov eax, [esp + 000008CCh];
+		cmp eax, [lingoCallCompareAddress3];
 		jnz epilogue;
 
+		set:
 		// copy the string
 		push [THE_PRODUCT_VERSION_SIZE]; // num
 		lea eax, [theProductVersion];
@@ -4641,8 +4814,15 @@ __declspec(naked) void setTheEnvironment_productVersionExtendedCode12() {
 		// compare to Lingo Call for the environment.productVersion
 		mov eax, [esp + 00000DBCh];
 		cmp eax, [lingoCallCompareAddress];
+		jnz compare_to__system_environmentproplist_productversion;
+		jmp set;
+
+		compare_to__system_environmentproplist_productversion:
+		mov eax, [esp + 000009A0h];
+		cmp eax, [lingoCallCompareAddress4];
 		jnz do_not_set;
 
+		set:
 		// restore EAX
 		pop eax;
 		lea eax, [ebp - 00000404h];
@@ -4685,8 +4865,15 @@ __declspec(naked) void setTheEnvironment_osVersionExtendedCode12() {
 		// compare to Lingo Call for the environment.osVersion
 		mov eax, [esp + 000011DCh];
 		cmp eax, [lingoCallCompareAddress];
+		jnz compare_to__system_environmentproplist_osversion;
+		jmp set;
+
+		compare_to__system_environmentproplist_osversion:
+		mov eax, [esp + 00000DC0h];
+		cmp eax, [lingoCallCompareAddress4];
 		jnz do_not_set;
 
+		set:
 		lea ecx, [theEnvironment_osVersion];
 		jmp epilogue;
 
@@ -5597,12 +5784,14 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				setTheEnvironment_shockMachineExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x000B18E0);
 				theEnvironmentCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000AF1D0);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000D7059);
+				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x000D719A);
 				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000B18D4, setTheEnvironment_shockMachineExtendedCode10);
 				break;
 				case m_setTheEnvironment_shockMachineVersion:
 				setTheEnvironment_shockMachineVersionExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x000B1933);
 				theEnvironmentCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000AF1D0);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000D7059);
+				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x000D719A);
 				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000B1929, setTheEnvironment_shockMachineVersionExtendedCode10);
 				break;
 				case m_setThePlatform:
@@ -5611,6 +5800,7 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				setThePlatformTheEnvironment_osVersionExtendedCodeSubroutineAddress = createExtendedCodeAddress(moduleHandle, 0x000A6374);
 				setThePlatformExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x0001D6F3);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000D7059);
+				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x000D719A);
 				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x0001D6EA, setThePlatformExtendedCode10);
 				break;
 				case m_setTheRunMode:
@@ -5618,6 +5808,8 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				setTheEnvironment_runModeExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x000B19DD);
 				theEnvironmentCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000AF1D0);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000D7059);
+				lingoCallCompareAddress3 = createExtendedCodeAddress(moduleHandle, 0x000D712F);
+				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x000D719A);
 				if (!extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x0003E1F7, setTheRunModeExtendedCode10)) {
 					callLingoAlertAntivirus(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Extend Code");
 					return false;
@@ -5627,6 +5819,7 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				case m_setTheEnvironment_productBuildVersion:
 				setTheEnvironment_productBuildVersionExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000B1B54);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000D7059);
+				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x000D719A);
 				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x0003E2CD, setTheEnvironment_productBuildVersionExtendedCode10);
 				break;
 				case m_setTheProductVersion:
@@ -5634,6 +5827,8 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				setTheEnvironment_productVersionExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x000B1BB3);
 				theEnvironmentCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000AF1D0);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000D7059);
+				lingoCallCompareAddress3 = createExtendedCodeAddress(moduleHandle, 0x000D712F);
+				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x000D719A);
 				if (!extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x0003E297, setTheProductVersionExtendedCode10)) {
 					callLingoAlertAntivirus(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Extend Code");
 					return false;
@@ -5644,6 +5839,7 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				setTheEnvironment_platformTheEnvironment_osVersionExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000B1970);
 				setThePlatformTheEnvironment_osVersionExtendedCodeSubroutineAddress = createExtendedCodeAddress(moduleHandle, 0x000A6374);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000D7059);
+				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x000D719A);
 				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x0001D6F9, setTheEnvironment_osVersionExtendedCode10);
 				break;
 				case m_setTheMachineType:
@@ -5719,12 +5915,14 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				setTheEnvironment_shockMachineExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x000B2C33);
 				theEnvironmentCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000B0534);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000D8449);
+				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x000D858A);
 				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000B2C27, setTheEnvironment_shockMachineExtendedCode101);
 				break;
 				case m_setTheEnvironment_shockMachineVersion:
 				setTheEnvironment_shockMachineVersionExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x000B2C86);
 				theEnvironmentCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000B0534);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000D8449);
+				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x000D858A);
 				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000B2C7C, setTheEnvironment_shockMachineVersionExtendedCode101);
 				break;
 				case m_setThePlatform:
@@ -5733,6 +5931,7 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				setThePlatformTheEnvironment_osVersionExtendedCodeSubroutineAddress = createExtendedCodeAddress(moduleHandle, 0x000A777A);
 				setThePlatformExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x0001DB0B);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000D8449);
+				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x000D858A);
 				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x0001DB02, setThePlatformExtendedCode101);
 				break;
 				case m_setTheRunMode:
@@ -5740,6 +5939,8 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				setTheEnvironment_runModeExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x000B2D30);
 				theEnvironmentCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000B0534);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000D8449);
+				lingoCallCompareAddress3 = createExtendedCodeAddress(moduleHandle, 0x000D851F);
+				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x000D858A);
 				if (!extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x0003E846, setTheRunModeExtendedCode101)) {
 					callLingoAlertAntivirus(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Extend Code");
 					return false;
@@ -5749,6 +5950,7 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				case m_setTheEnvironment_productBuildVersion:
 				setTheEnvironment_productBuildVersionExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000B2EA7);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000D8449);
+				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x000D858A);
 				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x0003E91C, setTheEnvironment_productBuildVersionExtendedCode101);
 				break;
 				case m_setTheProductVersion:
@@ -5756,6 +5958,8 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				setTheEnvironment_productVersionExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x000B2F06);
 				theEnvironmentCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000B0534);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000D8449);
+				lingoCallCompareAddress3 = createExtendedCodeAddress(moduleHandle, 0x000D851F);
+				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x000D858A);
 				if (!extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x0003E8E6, setTheProductVersionExtendedCode101)) {
 					callLingoAlertAntivirus(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Extend Code");
 					return false;
@@ -5766,6 +5970,7 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				setTheEnvironment_platformTheEnvironment_osVersionExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000B2CC3);
 				setThePlatformTheEnvironment_osVersionExtendedCodeSubroutineAddress = createExtendedCodeAddress(moduleHandle, 0x000A777A);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000D8449);
+				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x000D858A);
 				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x0001DB11, setTheEnvironment_osVersionExtendedCode101);
 				break;
 				case m_setTheMachineType:
@@ -5841,12 +6046,14 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				setTheEnvironment_shockMachineExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x000D9C0A);
 				theEnvironmentCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000DA83A);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x001103ED);
+				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x00110522);
 				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000D9C03, setTheEnvironment_shockMachineExtendedCode11);
 				break;
 				case m_setTheEnvironment_shockMachineVersion:
 				setTheEnvironment_shockMachineVersionExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x000D9C4C);
 				theEnvironmentCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000DA83A);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x001103ED);
+				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x00110522);
 				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000D9C44, setTheEnvironment_shockMachineVersionExtendedCode11);
 				break;
 				case m_setThePlatform:
@@ -5855,6 +6062,7 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				setThePlatformTheEnvironment_osVersionExtendedCodeSubroutineAddress = createExtendedCodeAddress(moduleHandle, 0x000CE022);
 				setThePlatformExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x0002578D);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x001103ED);
+				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x00110522);
 				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x00025786, setThePlatformExtendedCode11);
 				break;
 				case m_setTheRunMode:
@@ -5862,6 +6070,8 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				setTheEnvironment_runModeExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x000D9CED);
 				theEnvironmentCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000DA83A);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x001103ED);
+				lingoCallCompareAddress3 = createExtendedCodeAddress(moduleHandle, 0x001104BB);
+				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x00110522);
 				if (!extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x0005562D, setTheRunModeExtendedCode11)) {
 					callLingoAlertAntivirus(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Extend Code");
 					return false;
@@ -5871,6 +6081,7 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				case m_setTheEnvironment_productBuildVersion:
 				setTheEnvironment_productBuildVersionExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000D9E78);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x001103ED);
+				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x00110522);
 				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x0005576E, setTheEnvironment_productBuildVersionExtendedCode11);
 				break;
 				case m_setTheProductVersion:
@@ -5878,6 +6089,8 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				setTheEnvironment_productVersionExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x000D9ED3);
 				theEnvironmentCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000DA83A);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x001103ED);
+				lingoCallCompareAddress3 = createExtendedCodeAddress(moduleHandle, 0x001104BB);
+				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x00110522);
 				if (!extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x00055724, setTheProductVersionExtendedCode11)) {
 					callLingoAlertAntivirus(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Extend Code");
 					return false;
@@ -5888,6 +6101,7 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				setTheEnvironment_platformTheEnvironment_osVersionExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000D9C8A);
 				setThePlatformTheEnvironment_osVersionExtendedCodeSubroutineAddress = createExtendedCodeAddress(moduleHandle, 0x000CE022);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x001103ED);
+				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x00110522);
 				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x00025798, setTheEnvironment_osVersionExtendedCode11);
 				break;
 				case m_setTheMachineType:
@@ -5963,12 +6177,14 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				setTheEnvironment_shockMachineExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x000D9B9A);
 				theEnvironmentCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000DA7CA);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x0011037D);
+				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x001104B2);
 				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000D9B93, setTheEnvironment_shockMachineExtendedCode1103);
 				break;
 				case m_setTheEnvironment_shockMachineVersion:
 				setTheEnvironment_shockMachineVersionExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x000D9BDC);
 				theEnvironmentCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000DA7CA);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x0011037D);
+				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x001104B2);
 				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000D9BD4, setTheEnvironment_shockMachineVersionExtendedCode1103);
 				break;
 				case m_setThePlatform:
@@ -5977,6 +6193,7 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				setThePlatformTheEnvironment_osVersionExtendedCodeSubroutineAddress = createExtendedCodeAddress(moduleHandle, 0x000CDFB2);
 				setThePlatformExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x000257BD);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x0011037D);
+				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x001104B2);
 				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000257B6, setThePlatformExtendedCode1103);
 				break;
 				case m_setTheRunMode:
@@ -5984,6 +6201,8 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				setTheEnvironment_runModeExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x000D9C7D);
 				theEnvironmentCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000DA7CA);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x0011037D);
+				lingoCallCompareAddress3 = createExtendedCodeAddress(moduleHandle, 0x0011044B);
+				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x001104B2);
 				if (!extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000554DD, setTheRunModeExtendedCode1103)) {
 					callLingoAlertAntivirus(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Extend Code");
 					return false;
@@ -5993,6 +6212,7 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				case m_setTheEnvironment_productBuildVersion:
 				setTheEnvironment_productBuildVersionExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000D9E08);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x0011037D);
+				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x001104B2);
 				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x0005561E, setTheEnvironment_productBuildVersionExtendedCode1103);
 				break;
 				case m_setTheProductVersion:
@@ -6000,6 +6220,8 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				setTheEnvironment_productVersionExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x000D9E63);
 				theEnvironmentCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000DA7CA);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x0011037D);
+				lingoCallCompareAddress3 = createExtendedCodeAddress(moduleHandle, 0x0011044B);
+				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x001104B2);
 				if (!extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000555D4, setTheProductVersionExtendedCode1103)) {
 					callLingoAlertAntivirus(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Extend Code");
 					return false;
@@ -6010,6 +6232,7 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				setTheEnvironment_platformTheEnvironment_osVersionExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000D9C1A);
 				setThePlatformTheEnvironment_osVersionExtendedCodeSubroutineAddress = createExtendedCodeAddress(moduleHandle, 0x000CDFB2);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x0011037D);
+				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x001104B2);
 				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000257C8, setTheEnvironment_osVersionExtendedCode1103);
 				break;
 				case m_setTheMachineType:
@@ -6085,12 +6308,14 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				setTheEnvironment_shockMachineExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x000DBD4A);
 				theEnvironmentCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000DC97A);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x00112FDD);
+				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x00113112);
 				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000DBD43, setTheEnvironment_shockMachineExtendedCode115);
 				break;
 				case m_setTheEnvironment_shockMachineVersion:
 				setTheEnvironment_shockMachineVersionExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x000DBD8C);
 				theEnvironmentCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000DC97A);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x00112FDD);
+				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x00113112);
 				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000DBD84, setTheEnvironment_shockMachineVersionExtendedCode115);
 				break;
 				case m_setThePlatform:
@@ -6099,6 +6324,7 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				setThePlatformTheEnvironment_osVersionExtendedCodeSubroutineAddress = createExtendedCodeAddress(moduleHandle, 0x000CE7FE);
 				setThePlatformExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x000259ED);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x00112FDD);
+				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x00113112);
 				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000259E6, setThePlatformExtendedCode115);
 				break;
 				case m_setTheRunMode:
@@ -6106,6 +6332,8 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				setTheEnvironment_runModeExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x000DBE2D);
 				theEnvironmentCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000DC97A);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x00112FDD);
+				lingoCallCompareAddress3 = createExtendedCodeAddress(moduleHandle, 0x001130AB);
+				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x00113112);
 				if (!extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x0005729D, setTheRunModeExtendedCode115)) {
 					callLingoAlertAntivirus(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Extend Code");
 					return false;
@@ -6115,6 +6343,7 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				case m_setTheEnvironment_productBuildVersion:
 				setTheEnvironment_productBuildVersionExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000DBFB8);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x00112FDD);
+				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x00113112);
 				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000573DE, setTheEnvironment_productBuildVersionExtendedCode115);
 				break;
 				case m_setTheProductVersion:
@@ -6122,6 +6351,8 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				setTheEnvironment_productVersionExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x000DC013);
 				theEnvironmentCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000DC97A);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x00112FDD);
+				lingoCallCompareAddress3 = createExtendedCodeAddress(moduleHandle, 0x001130AB);
+				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x00113112);
 				if (!extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x00057394, setTheProductVersionExtendedCode115)) {
 					callLingoAlertAntivirus(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Extend Code");
 					return false;
@@ -6132,6 +6363,7 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				setTheEnvironment_platformTheEnvironment_osVersionExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000DBDCA);
 				setThePlatformTheEnvironment_osVersionExtendedCodeSubroutineAddress = createExtendedCodeAddress(moduleHandle, 0x000CE7FE);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x00112FDD);
+				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x00113112);
 				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000259F8, setTheEnvironment_osVersionExtendedCode115);
 				break;
 				case m_setTheMachineType:
@@ -6207,12 +6439,14 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				setTheEnvironment_shockMachineExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x000DC7CA);
 				theEnvironmentCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000DD3FA);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x00113BA7);
+				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x00113CDC);
 				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000DC7C3, setTheEnvironment_shockMachineExtendedCode1158);
 				break;
 				case m_setTheEnvironment_shockMachineVersion:
 				setTheEnvironment_shockMachineVersionExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x000DC80C);
 				theEnvironmentCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000DD3FA);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x00113BA7);
+				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x00113CDC);
 				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000DC804, setTheEnvironment_shockMachineVersionExtendedCode1158);
 				break;
 				case m_setThePlatform:
@@ -6228,6 +6462,8 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				setTheEnvironment_runModeExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x000DC8AD);
 				theEnvironmentCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000DD3FA);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x00113BA7);
+				lingoCallCompareAddress3 = createExtendedCodeAddress(moduleHandle, 0x00113C75);
+				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x00113CDC);
 				if (!extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x0005793D, setTheRunModeExtendedCode1158)) {
 					callLingoAlertAntivirus(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Extend Code");
 					return false;
@@ -6237,6 +6473,7 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				case m_setTheEnvironment_productBuildVersion:
 				setTheEnvironment_productBuildVersionExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000DCA38);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x00113BA7);
+				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x00113CDC);
 				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x00057A7E, setTheEnvironment_productBuildVersionExtendedCode1158);
 				break;
 				case m_setTheProductVersion:
@@ -6244,6 +6481,8 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				setTheEnvironment_productVersionExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x000DCA93);
 				theEnvironmentCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000DD3FA);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x00113BA7);
+				lingoCallCompareAddress3 = createExtendedCodeAddress(moduleHandle, 0x00113C75);
+				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x00113CDC);
 				if (!extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x00057A34, setTheProductVersionExtendedCode1158)) {
 					callLingoAlertAntivirus(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Extend Code");
 					return false;
@@ -6254,6 +6493,7 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				setTheEnvironment_platformTheEnvironment_osVersionExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000DC84A);
 				setThePlatformTheEnvironment_osVersionExtendedCodeSubroutineAddress = createExtendedCodeAddress(moduleHandle, 0x000CF27E);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x00113BA7);
+				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x00113CDC);
 				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x00025DD8, setTheEnvironment_osVersionExtendedCode1158);
 				break;
 				case m_setTheMachineType:
@@ -6329,12 +6569,14 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				setTheEnvironment_shockMachineExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x000DD84A);
 				theEnvironmentCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000DE47A);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x001161ED);
+				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x00116322);
 				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000DD843, setTheEnvironment_shockMachineExtendedCode1159);
 				break;
 				case m_setTheEnvironment_shockMachineVersion:
 				setTheEnvironment_shockMachineVersionExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x000DD88C);
 				theEnvironmentCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000DE47A);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x001161ED);
+				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x00116322);
 				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000DD884, setTheEnvironment_shockMachineVersionExtendedCode1159);
 				break;
 				case m_setThePlatform:
@@ -6343,6 +6585,7 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				setThePlatformTheEnvironment_osVersionExtendedCodeSubroutineAddress = createExtendedCodeAddress(moduleHandle, 0x000CFFF4);
 				setThePlatformExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x0002601D);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x001161ED);
+				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x00116322);
 				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x00026016, setThePlatformExtendedCode1159);
 				break;
 				case m_setTheRunMode:
@@ -6350,6 +6593,8 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				setTheEnvironment_runModeExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x000DD92D);
 				theEnvironmentCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000DE47A);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x001161ED);
+				lingoCallCompareAddress3 = createExtendedCodeAddress(moduleHandle, 0x001162BB);
+				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x00116322);
 				if (!extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x00057D6D, setTheRunModeExtendedCode1159)) {
 					callLingoAlertAntivirus(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Extend Code");
 					return false;
@@ -6359,6 +6604,7 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				case m_setTheEnvironment_productBuildVersion:
 				setTheEnvironment_productBuildVersionExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000DDAB8);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x001161ED);
+				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x00116322);
 				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x00057EAE, setTheEnvironment_productBuildVersionExtendedCode1159);
 				break;
 				case m_setTheProductVersion:
@@ -6366,6 +6612,8 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				setTheEnvironment_productVersionExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x000DDB13);
 				theEnvironmentCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000DE47A);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x001161ED);
+				lingoCallCompareAddress3 = createExtendedCodeAddress(moduleHandle, 0x001162BB);
+				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x00116322);
 				if (!extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x00057E64, setTheProductVersionExtendedCode1159)) {
 					callLingoAlertAntivirus(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Extend Code");
 					return false;
@@ -6376,6 +6624,7 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				setTheEnvironment_platformTheEnvironment_osVersionExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000DD8CA);
 				setThePlatformTheEnvironment_osVersionExtendedCodeSubroutineAddress = createExtendedCodeAddress(moduleHandle, 0x000CFFF4);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x001161ED);
+				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x00116322);
 				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x00026028, setTheEnvironment_osVersionExtendedCode1159);
 				break;
 				case m_setTheMachineType:
@@ -6453,12 +6702,14 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				setTheEnvironment_shockMachineExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x0000FB4B);
 				theEnvironmentCompareAddress = createExtendedCodeAddress(moduleHandle, 0x00010AA5);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000363FC);
+				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x0003651C);
 				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x0000FB42, setTheEnvironment_shockMachineExtendedCode12);
 				break;
 				case m_setTheEnvironment_shockMachineVersion:
 				setTheEnvironment_shockMachineVersionExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x0000FB95);
 				theEnvironmentCompareAddress = createExtendedCodeAddress(moduleHandle, 0x00010AA5);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000363FC);
+				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x0003651C);
 				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x0000FB8E, setTheEnvironment_shockMachineVersionExtendedCode12);
 				break;
 				case m_setThePlatform:
@@ -6467,6 +6718,7 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				setThePlatformTheEnvironment_osVersionExtendedCodeSubroutineAddress = createExtendedCodeAddress(moduleHandle, 0x00166A56);
 				setThePlatformExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x0007AC1E);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000363FC);
+				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x0003651C);
 				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x0007AC17, setThePlatformExtendedCode12);
 				break;
 				case m_setTheRunMode:
@@ -6474,6 +6726,8 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				setTheEnvironment_runModeExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x0000FC53);
 				theEnvironmentCompareAddress = createExtendedCodeAddress(moduleHandle, 0x00010AA5);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000363FC);
+				lingoCallCompareAddress3 = createExtendedCodeAddress(moduleHandle, 0x000364BC);
+				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x0003651C);
 				exceptionHandlerSubroutineAddress = createExtendedCodeAddress(moduleHandle, 0x00001762);
 				if (!extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000A3153, setTheRunModeExtendedCode12)) {
 					callLingoAlertAntivirus(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Extend Code");
@@ -6484,6 +6738,7 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				case m_setTheEnvironment_productBuildVersion:
 				setTheEnvironment_productBuildVersionExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x0000FE22);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000363FC);
+				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x0003651C);
 				exceptionHandlerSubroutineAddress = createExtendedCodeAddress(moduleHandle, 0x00001762);
 				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000A3232, setTheEnvironment_productBuildVersionExtendedCode12);
 				break;
@@ -6492,6 +6747,8 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				setTheEnvironment_productVersionExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x0000FE8F);
 				theEnvironmentCompareAddress = createExtendedCodeAddress(moduleHandle, 0x00010AA5);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000363FC);
+				lingoCallCompareAddress3 = createExtendedCodeAddress(moduleHandle, 0x000364BC);
+				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x0003651C);
 				exceptionHandlerSubroutineAddress = createExtendedCodeAddress(moduleHandle, 0x00001762);
 				if (!extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000A3204, setTheProductVersionExtendedCode12)) {
 					callLingoAlertAntivirus(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Extend Code");
@@ -6503,6 +6760,7 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				setTheEnvironment_platformTheEnvironment_osVersionExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x0000FBDC);
 				setThePlatformTheEnvironment_osVersionExtendedCodeSubroutineAddress = createExtendedCodeAddress(moduleHandle, 0x00166A56);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000363FC);
+				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x0003651C);
 				exceptionHandlerSubroutineAddress = createExtendedCodeAddress(moduleHandle, 0x00001762);
 				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x0007AC22, setTheEnvironment_osVersionExtendedCode12);
 				break;
