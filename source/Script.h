@@ -37,6 +37,7 @@ enum MODULE_DIRECTOR_VERSION {
 	MODULE_DIRECTOR_9,
 	MODULE_DIRECTOR_10,
 	MODULE_DIRECTOR_101,
+	MODULE_DIRECTOR_1011,
 	MODULE_DIRECTOR_11,
 	MODULE_DIRECTOR_1103,
 	MODULE_DIRECTOR_115,
@@ -204,6 +205,52 @@ inline bool setLingoSafePlayer(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie p
 	}
 	err = pMoaDrMovieInterface->SetProp(safePlayerSymbol, &safePlayerValue);
 	if (err != kMoaErr_NoErr) {
+		return false;
+	}
+	return true;
+}
+
+inline bool callLingoVoidPNewXtra(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterface, ConstPMoaChar whichXtra) {
+	MoaError err = kMoaErr_NoErr;
+	MoaMmSymbol xtraSymbol;
+	MoaMmValue whichXtraValue = kVoidMoaMmValueInitializer;
+	MoaMmValue xtraResult = kVoidMoaMmValueInitializer;
+	MoaMmSymbol newSymbol;
+	MoaMmValue newResult = kVoidMoaMmValueInitializer;
+	MoaMmSymbol voidPSymbol;
+	MoaMmValue voidPResult = kVoidMoaMmValueInitializer;
+	MoaLong voidP = 0;
+
+	err = pMoaMmValueInterface->StringToSymbol("Xtra", &xtraSymbol);
+	if (err != kMoaErr_NoErr) {
+		return false;
+	}
+	err = pMoaMmValueInterface->StringToValue(whichXtra, &whichXtraValue);
+	if (err != kMoaErr_NoErr) {
+		return false;
+	}
+	err = pMoaDrMovieInterface->CallHandler(xtraSymbol, 1, &whichXtraValue, &xtraResult);
+	if (err != kMoaErr_NoErr) {
+		return false;
+	}
+	err = pMoaMmValueInterface->StringToSymbol("New", &newSymbol);
+	if (err != kMoaErr_NoErr) {
+		return false;
+	}
+	err = pMoaDrMovieInterface->CallHandler(newSymbol, 1, &xtraResult, &newResult);
+	if (err != kMoaErr_NoErr) {
+		return false;
+	}
+	err = pMoaMmValueInterface->StringToSymbol("VoidP", &voidPSymbol);
+	if (err != kMoaErr_NoErr) {
+		return false;
+	}
+	err = pMoaDrMovieInterface->CallHandler(voidPSymbol, 1, &newResult, &voidPResult);
+	if (err != kMoaErr_NoErr) {
+		return false;
+	}
+	err = pMoaMmValueInterface->ValueToInteger(&voidPResult, &voidP);
+	if (err != kMoaErr_NoErr || voidP) {
 		return false;
 	}
 	return true;
@@ -411,13 +458,13 @@ MoaChar theEnvironment_osVersion[THE_ENVIRONMENT_OS_VERSION_SIZE] = "";
 
 MoaLong theMachineType = 0;
 
-MoaLong theExitLock = 0;
-
-MoaLong theSafePlayer = 0;
-
 // External Params
 size_t externalParamsSize = 0;
 PMoaChar externalParams = NULL;
+
+MoaLong theExitLock = 0;
+
+MoaLong theSafePlayer = 0;
 
 
 
