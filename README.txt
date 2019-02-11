@@ -1,4 +1,4 @@
-LeechProtectionRemovalHelp Xtra 1.3.9
+LeechProtectionRemovalHelp Xtra 1.4.0
 By Anthony Kleine
 
 	This Director Xtra allows for the archival of Shockwave Movies
@@ -81,10 +81,10 @@ Message Table
 	* setTheMachineType integer machineType -- sets the machineType property
 	-- Set External Params --
 	* setExternalParam string name, string value -- sets an External Param
+	-- name cannot be empty
 	-- Force Properties --
 	* forceTheExitLock integer exitLock -- forces the exitLock property
 	* forceTheSafePlayer integer safePlayer -- forces the safePlayer property
-	-- name cannot be empty
 	-- Disable Functions --
 	* disableGoToNetMovie -- disables goToNetMovie
 	* disableGoToNetPage -- disables goToNetPage

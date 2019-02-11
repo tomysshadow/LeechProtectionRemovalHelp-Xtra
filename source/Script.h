@@ -95,6 +95,7 @@ bool shiftMemory(size_t bufferSize, const void* buffer, size_t sourceSize, const
 	
 	size_t destinationSize = (char*)buffer + bufferSize - source;
 	char* destination = (char*)source;
+
 	if (!direction) {
 		destination -= shift;
 	} else {
@@ -104,7 +105,6 @@ bool shiftMemory(size_t bufferSize, const void* buffer, size_t sourceSize, const
 	if (destination < buffer || destination + sourceSize > (char*)buffer + bufferSize) {
 		return false;
 	}
-	
 	return !memmove_s(destination, destinationSize, source, sourceSize);
 }
 
@@ -118,10 +118,13 @@ inline bool callLingoQuit(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDr
 	MoaMmSymbol quitSymbol;
 
 	err = pMoaMmValueInterface->StringToSymbol("Quit", &quitSymbol);
+
 	if (err != kMoaErr_NoErr) {
 		return false;
 	}
+
 	err = pMoaDrMovieInterface->CallHandler(quitSymbol, 0, NULL, NULL);
+
 	if (err != kMoaErr_NoErr) {
 		return false;
 	}
@@ -136,14 +139,19 @@ inline bool callLingoAlert(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaD
 	MoaMmValue messageValue = kVoidMoaMmValueInitializer;
 
 	err = pMoaMmValueInterface->StringToSymbol("Alert", &alertSymbol);
+
 	if (err != kMoaErr_NoErr) {
 		return false;
 	}
+
 	err = pMoaMmValueInterface->StringToValue(message, &messageValue);
+
 	if (err != kMoaErr_NoErr) {
 		return false;
 	}
+
 	err = pMoaDrMovieInterface->CallHandler(alertSymbol, 1, &messageValue, NULL);
+
 	if (err != kMoaErr_NoErr) {
 		return false;
 	}
@@ -154,6 +162,7 @@ inline bool callLingoAlertXtraMissing(PIMoaMmValue pMoaMmValueInterface, PIMoaDr
 	if (!callLingoAlert(pMoaMmValueInterface, pMoaDrMovieInterface, message)) {
 		return false;
 	}
+
 	if (!callLingoAlert(pMoaMmValueInterface, pMoaDrMovieInterface, "An Xtra that the LeechProtectionRemovalHelp Xtra requires, such as the NetLingo Xtra or Shockwave 3D Asset Xtra, is missing.")) {
 		return false;
 	}
@@ -164,6 +173,7 @@ inline bool callLingoAlertComponentCorrupted(PIMoaMmValue pMoaMmValueInterface, 
 	if (!callLingoAlert(pMoaMmValueInterface, pMoaDrMovieInterface, message)) {
 		return false;
 	}
+
 	if (!callLingoAlert(pMoaMmValueInterface, pMoaDrMovieInterface, "A Component that the LeechProtectionRemovalHelp Xtra requires is corrupted, garbled or tampered with. Please use the official Components provided by Macromedia/Adobe.")) {
 		return false;
 	}
@@ -174,6 +184,7 @@ inline bool callLingoAlertIncompatibleDirectorVersion(PIMoaMmValue pMoaMmValueIn
 	if (!callLingoAlert(pMoaMmValueInterface, pMoaDrMovieInterface, message)) {
 		return false;
 	}
+
 	if (!callLingoAlert(pMoaMmValueInterface, pMoaDrMovieInterface, "The LeechProtectionRemovalHelp Xtra has determined it is incompatible with this Director version.")) {
 		return false;
 	}
@@ -184,6 +195,7 @@ inline bool callLingoAlertAntivirus(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMo
 	if (!callLingoAlert(pMoaMmValueInterface, pMoaDrMovieInterface, message)) {
 		return false;
 	}
+
 	if (!callLingoAlert(pMoaMmValueInterface, pMoaDrMovieInterface, "Your Antivirus may be preventing the LeechProtectionRemovalHelp Xtra from working properly.")) {
 		return false;
 	}
@@ -196,14 +208,19 @@ inline bool setLingoSafePlayer(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie p
 	MoaMmValue safePlayerValue = kVoidMoaMmValueInitializer;
 
 	err = pMoaMmValueInterface->StringToSymbol("SafePlayer", &safePlayerSymbol);
+
 	if (err != kMoaErr_NoErr) {
 		return false;
 	}
+
 	err = pMoaMmValueInterface->IntegerToValue(safePlayer, &safePlayerValue);
+
 	if (err != kMoaErr_NoErr) {
 		return false;
 	}
+
 	err = pMoaDrMovieInterface->SetProp(safePlayerSymbol, &safePlayerValue);
+
 	if (err != kMoaErr_NoErr) {
 		return false;
 	}
@@ -222,34 +239,49 @@ inline bool callLingoVoidPNewXtra(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovi
 	MoaLong voidP = 0;
 
 	err = pMoaMmValueInterface->StringToSymbol("Xtra", &xtraSymbol);
+
 	if (err != kMoaErr_NoErr) {
 		return false;
 	}
+
 	err = pMoaMmValueInterface->StringToValue(whichXtra, &whichXtraValue);
+
 	if (err != kMoaErr_NoErr) {
 		return false;
 	}
+
 	err = pMoaDrMovieInterface->CallHandler(xtraSymbol, 1, &whichXtraValue, &xtraResult);
+
 	if (err != kMoaErr_NoErr) {
 		return false;
 	}
+
 	err = pMoaMmValueInterface->StringToSymbol("New", &newSymbol);
+
 	if (err != kMoaErr_NoErr) {
 		return false;
 	}
+
 	err = pMoaDrMovieInterface->CallHandler(newSymbol, 1, &xtraResult, &newResult);
+
 	if (err != kMoaErr_NoErr) {
 		return false;
 	}
+
 	err = pMoaMmValueInterface->StringToSymbol("VoidP", &voidPSymbol);
+
 	if (err != kMoaErr_NoErr) {
 		return false;
 	}
+
 	err = pMoaDrMovieInterface->CallHandler(voidPSymbol, 1, &newResult, &voidPResult);
+
 	if (err != kMoaErr_NoErr) {
 		return false;
 	}
+
 	err = pMoaMmValueInterface->ValueToInteger(&voidPResult, &voidP);
+
 	if (err != kMoaErr_NoErr || voidP) {
 		return false;
 	}
@@ -259,41 +291,48 @@ inline bool callLingoVoidPNewXtra(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovi
 
 
 
-inline DWORD createExtendedCodeAddress(HANDLE moduleHandle, DWORD address) {
+inline DWORD createExtendedCodeAddress(HMODULE moduleHandle, DWORD address) {
 	return (DWORD)moduleHandle + address;
 }
 
-bool getSectionAddressAndSize(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterface, HANDLE moduleHandle, DWORD virtualAddress, DWORD virtualSize) {
+bool getSectionAddressAndSize(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterface, HMODULE moduleHandle, DWORD virtualAddress, DWORD virtualSize) {
 	if (!moduleHandle) {
 		//callLingoAlertXtraMissing(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Get Module Handle");
 		return false;
 	}
+
 	PIMAGE_NT_HEADERS imageNtHeader = ImageNtHeader(moduleHandle);
+
 	if (!imageNtHeader) {
 		//callLingoAlert(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Get Image NT Header");
 		return false;
 	}
+
 	PIMAGE_SECTION_HEADER imageSectionHeader = (PIMAGE_SECTION_HEADER)(imageNtHeader + 1);
+
 	if (!imageSectionHeader) {
 		imageNtHeader = NULL;
 		//callLingoAlert(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Get Image Section Header");
 		return false;
 	}
+
 	for (WORD i = 0;i < imageNtHeader->FileHeader.NumberOfSections;i++) {
 		if (virtualAddress >= (DWORD)moduleHandle + imageSectionHeader->VirtualAddress && virtualAddress + virtualSize <= (DWORD)moduleHandle + imageSectionHeader->VirtualAddress + imageSectionHeader->Misc.VirtualSize) {
 			imageNtHeader = NULL;
 			imageSectionHeader = NULL;
 			return true;
 		}
+
 		imageSectionHeader++;
 	}
+
 	// not dangerous, so let the caller decide whether or not to quit
 	imageNtHeader = NULL;
 	imageSectionHeader = NULL;
 	return false;
 }
 
-bool unprotectCode(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterface, HANDLE moduleHandle, DWORD virtualAddress, DWORD virtualSize, DWORD &lpflOldProtect) {
+bool unprotectCode(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterface, HMODULE moduleHandle, DWORD virtualAddress, DWORD virtualSize, DWORD &lpflOldProtect) {
 	if (!getSectionAddressAndSize(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, virtualAddress, virtualSize)) {
 		return false;
 	}
@@ -304,6 +343,7 @@ bool unprotectCode(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieIn
 
 	// get Basic Memory Information
 	MEMORY_BASIC_INFORMATION memoryBasicInformation;
+
 	if (VirtualQuery((LPCVOID)virtualAddress, &memoryBasicInformation, sizeof(memoryBasicInformation)) != sizeof(memoryBasicInformation)
 		|| !memoryBasicInformation.Protect
 		|| memoryBasicInformation.Protect & PAGE_NOACCESS
@@ -317,7 +357,7 @@ bool unprotectCode(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieIn
 	return true;
 }
 
-bool protectCode(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterface, HANDLE moduleHandle, DWORD virtualAddress, DWORD virtualSize, DWORD &lpflOldProtect) {
+bool protectCode(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterface, HMODULE moduleHandle, DWORD virtualAddress, DWORD virtualSize, DWORD &lpflOldProtect) {
 	if (!getSectionAddressAndSize(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, virtualAddress, virtualSize)) {
 		callLingoAlertComponentCorrupted(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Get Section Address And Size");
 		return false;
@@ -330,7 +370,7 @@ bool protectCode(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInte
 	return true;
 }
 
-bool flushCode(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterface, HANDLE moduleHandle, DWORD virtualAddress, DWORD virtualSize) {
+bool flushCode(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterface, HMODULE moduleHandle, DWORD virtualAddress, DWORD virtualSize) {
 	if (!getSectionAddressAndSize(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, virtualAddress, virtualSize)) {
 		callLingoAlertComponentCorrupted(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Get Section Address And Size");
 		return false;
@@ -343,10 +383,11 @@ bool flushCode(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterf
 	return true;
 }
 
-bool testCode(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterface, HANDLE moduleHandle, DWORD relativeVirtualAddress, DWORD virtualSize, unsigned char code[]) {
+bool testCode(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterface, HMODULE moduleHandle, DWORD relativeVirtualAddress, DWORD virtualSize, unsigned char code[]) {
 	if (!moduleHandle) {
 		return false;
 	}
+
 	DWORD virtualAddress = (DWORD)moduleHandle + relativeVirtualAddress;
 	DWORD lpflOldProtect = 0;
 
@@ -364,10 +405,11 @@ bool testCode(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 	return result;
 }
 
-bool extendCode(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterface, HANDLE moduleHandle, DWORD relativeVirtualAddress, void* code, bool call = false) {
+bool extendCode(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterface, HMODULE moduleHandle, DWORD relativeVirtualAddress, void* code, bool call = false) {
 	if (!moduleHandle) {
 		return false;
 	}
+
 	DWORD virtualAddress = (DWORD)moduleHandle + relativeVirtualAddress;
 	DWORD virtualSize = 5;
 	DWORD lpflOldProtect = 0;
@@ -398,10 +440,11 @@ bool extendCode(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInter
 	return true;
 }
 
-bool extendCode(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterface, HANDLE moduleHandle, DWORD relativeVirtualAddress) {
+bool extendCode(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterface, HMODULE moduleHandle, DWORD relativeVirtualAddress) {
 	if (!moduleHandle) {
 		return false;
 	}
+
 	DWORD virtualAddress = (DWORD)moduleHandle + relativeVirtualAddress;
 	DWORD virtualSize = 1;
 	DWORD lpflOldProtect = 0;
