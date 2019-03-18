@@ -146,6 +146,14 @@ enum {
 // says which version of the XDK we're using
 #define XTRA_VERSION_NUMBER XTRA_CLASS_VERSION
 
+#define _GLUE_CANUNLOADNOW \
+	STDAPI DLL(CanUnloadNow)(void); \
+	STDAPIIMP DLL(CanUnloadNow)(void) { \
+		X_ENTER_DLLENTRYPOINT \
+		X_STD_RETURN(kMoaErr_XtraInUse); \
+		X_EXIT \
+	} \
+
 BEGIN_XTRA
 BEGIN_XTRA_DEFINES_CLASS(TStdXtra, XTRA_CLASS_VERSION)
 CLASS_DEFINES_INTERFACE(TStdXtra, IMoaRegister, XTRA_VERSION_NUMBER)
@@ -160,9 +168,9 @@ END_XTRA
 STDMETHODIMP_(MoaError) MoaCreate_TStdXtra(TStdXtra* This) {
 	moa_try
 
-	ThrowErr(This->pCallback->QueryInterface(&IID_IMoaMmValue, (PPMoaVoid)&This->pMoaMmValueInterface));
-	ThrowErr(This->pCallback->QueryInterface(&IID_IMoaMmUtils2, (PPMoaVoid)&This->pMoaMmUtilsInterface));
-	ThrowErr(This->pCallback->QueryInterface(&IID_IMoaDrPlayer, (PPMoaVoid)&This->pMoaDrPlayerInterface));
+	ThrowErr(This->pCallback->QueryInterface(&IID_IMoaMmValue, (PPMoaVoid)&This->moaMmValueInterfacePointer));
+	ThrowErr(This->pCallback->QueryInterface(&IID_IMoaMmUtils2, (PPMoaVoid)&This->moaMmUtilsInterfacePointer));
+	ThrowErr(This->pCallback->QueryInterface(&IID_IMoaDrPlayer, (PPMoaVoid)&This->moaDrPlayerInterfacePointer));
 
 	moa_catch
 	moa_catch_end
@@ -174,16 +182,16 @@ STDMETHODIMP_(MoaError) MoaCreate_TStdXtra(TStdXtra* This) {
 STDMETHODIMP_(void) MoaDestroy_TStdXtra(TStdXtra* This) {
 	moa_try
 
-	if (This->pMoaMmValueInterface) {
-		This->pMoaMmValueInterface->Release();
+	if (This->moaMmValueInterfacePointer) {
+		This->moaMmValueInterfacePointer->Release();
 	}
 
-	if (This->pMoaMmUtilsInterface) {
-		This->pMoaMmUtilsInterface->Release();
+	if (This->moaMmUtilsInterfacePointer) {
+		This->moaMmUtilsInterfacePointer->Release();
 	}
 
-	if (This->pMoaDrPlayerInterface) {
-		This->pMoaDrPlayerInterface->Release();
+	if (This->moaDrPlayerInterfacePointer) {
+		This->moaDrPlayerInterfacePointer->Release();
 	}
 	moa_catch
 	moa_catch_end
@@ -230,7 +238,7 @@ STDMETHODIMP TStdXtra_IMoaRegister::Register(PIMoaCache pCache, PIMoaXtraEntryDi
 	// register the Method Table
 	const char* VER_MAJORVERSION_STRING = "1";
 	const char* VER_MINORVERSION_STRING = "4";
-	const char* VER_BUGFIXVERSION_STRING = "0";
+	const char* VER_BUGFIXVERSION_STRING = "1";
 
 	sprintf_s(versionStr, VERSION_STR_SIZE, versionInfo, VER_MAJORVERSION_STRING, VER_MINORVERSION_STRING, VER_BUGFIXVERSION_STRING);
 
@@ -357,11 +365,11 @@ STDMETHODIMP TStdXtra_IMoaMmXScript::Call(PMoaDrCallInfo callPtr) {
 // the Method Table being registered by
 // the Register method implemented by
 // the IMoaRegister interface
-MoaError TStdXtra_IMoaMmXScript::XScrpExtender(PMoaDrCallInfo callPtr, MODULE module, PIMoaDrMovie pMoaDrMovieInterface) {
+MoaError TStdXtra_IMoaMmXScript::XScrpExtender(PMoaDrCallInfo callPtr, MODULE module, PIMoaDrMovie moaDrMovieInterfacePointer) {
 	moa_try
 
-	if (!extender(pObj->pMoaMmValueInterface, pMoaDrMovieInterface, callPtr->methodSelector, module)) {
-		callLingoQuit(pObj->pMoaMmValueInterface, pMoaDrMovieInterface);
+	if (!extender(pObj->moaMmValueInterfacePointer, moaDrMovieInterfacePointer, callPtr->methodSelector, module)) {
+		callLingoQuit(pObj->moaMmValueInterfacePointer, moaDrMovieInterfacePointer);
 		TerminateProcess(GetCurrentProcess(), 0);
 		Throw(kMoaErr_NoErr);
 	}
@@ -374,16 +382,16 @@ MoaError TStdXtra_IMoaMmXScript::XScrpExtender(PMoaDrCallInfo callPtr, MODULE mo
 	moa_try
 
 	// get the Active Movie (so we can call a Lingo Handler in it if we need to)
-	PIMoaDrMovie pMoaDrMovieInterface;
-	ThrowErr(pObj->pMoaDrPlayerInterface->GetActiveMovie(&pMoaDrMovieInterface));
+	PIMoaDrMovie moaDrMovieInterfacePointer;
+	ThrowErr(pObj->moaDrPlayerInterfacePointer->GetActiveMovie(&moaDrMovieInterfacePointer));
 	
-	ThrowErr(XScrpExtender(callPtr, module, pMoaDrMovieInterface));
+	ThrowErr(XScrpExtender(callPtr, module, moaDrMovieInterfacePointer));
 
 	moa_catch
 	moa_catch_end
 	// GOTTA SWEEP SWEEP SWEEP
-	if (pMoaDrMovieInterface) {
-		pMoaDrMovieInterface->Release();
+	if (moaDrMovieInterfacePointer) {
+		moaDrMovieInterfacePointer->Release();
 	}
 	moa_try_end
 }
@@ -395,7 +403,7 @@ MoaError TStdXtra_IMoaMmXScript::XScrpExtender(PMoaDrCallInfo callPtr, MODULE mo
 
 	// this is an overload for the same method as the previous but with the PMoaLong type
 	AccessArgByIndex(1, &argumentValue);
-	ThrowErr(pObj->pMoaMmValueInterface->ValueToInteger(&argumentValue, property));
+	ThrowErr(pObj->moaMmValueInterfacePointer->ValueToInteger(&argumentValue, property));
 
 	ThrowErr(XScrpExtender(callPtr, module));
 
@@ -411,7 +419,7 @@ MoaError TStdXtra_IMoaMmXScript::XScrpExtender(PMoaDrCallInfo callPtr, MODULE mo
 
 	// same deal again, this time for the PMoaChar type
 	AccessArgByIndex(1, &argumentValue);
-	ThrowErr(pObj->pMoaMmValueInterface->ValueToString(&argumentValue, property, propertySize));
+	ThrowErr(pObj->moaMmValueInterfacePointer->ValueToString(&argumentValue, property, propertySize));
 	// this is done by the extended code now
 	//*(unsigned char*)property = (unsigned char)strlen((char*)(property + 1));
 
@@ -425,8 +433,8 @@ MoaError TStdXtra_IMoaMmXScript::XScrpExtender(PMoaDrCallInfo callPtr, MODULE mo
 MoaError TStdXtra_IMoaMmXScript::XScrpSetExternalParam(PMoaDrCallInfo callPtr, MODULE module) {
 	moa_try
 	
-	PIMoaDrMovie pMoaDrMovieInterface;
-	ThrowErr(pObj->pMoaDrPlayerInterface->GetActiveMovie(&pMoaDrMovieInterface));
+	PIMoaDrMovie moaDrMovieInterfacePointer;
+	ThrowErr(pObj->moaDrPlayerInterfacePointer->GetActiveMovie(&moaDrMovieInterfacePointer));
 
 	MoaMmValue argumentValue = kVoidMoaMmValueInitializer;
 	
@@ -437,19 +445,21 @@ MoaError TStdXtra_IMoaMmXScript::XScrpSetExternalParam(PMoaDrCallInfo callPtr, M
 	MoaChar value[VALUE_SIZE] = "";
 
 	AccessArgByIndex(1, &argumentValue);
-	ThrowErr(pObj->pMoaMmValueInterface->ValueToString(&argumentValue, (PMoaChar)name, NAME_SIZE));
+	ThrowErr(pObj->moaMmValueInterfacePointer->ValueToString(&argumentValue, (PMoaChar)name, NAME_SIZE));
 
 	AccessArgByIndex(2, &argumentValue);
-	ThrowErr(pObj->pMoaMmValueInterface->ValueToString(&argumentValue, (PMoaChar)value, VALUE_SIZE));
+	ThrowErr(pObj->moaMmValueInterfacePointer->ValueToString(&argumentValue, (PMoaChar)value, VALUE_SIZE));
+
+	size_t externalParamsSizeOld = 0;
+	PMoaChar externalParamsOld = NULL;
 
 	// name cannot be empty
 	if (!strlen(name)) {
-		callLingoAlert(pObj->pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Set External Param (name cannot be empty)");
 		Throw(kMoaErr_BadParam);
 	}
 
-	size_t externalParamsSizeOld = externalParamsSize;
-	PMoaChar externalParamsOld = externalParams;
+	externalParamsSizeOld = externalParamsSize;
+	externalParamsOld = externalParams;
 
 	// adds the Param to the "browser"
 	// four strings, at least one of which must be at least one character
@@ -482,8 +492,8 @@ MoaError TStdXtra_IMoaMmXScript::XScrpSetExternalParam(PMoaDrCallInfo callPtr, M
 					// dangerous - memory is in unknown state, so quit
 					externalParamOldName = NULL;
 					externalParamOldValue = NULL;
-					callLingoAlert(pObj->pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Unset External Param");
-					callLingoQuit(pObj->pMoaMmValueInterface, pMoaDrMovieInterface);
+					callLingoAlert(pObj->moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Unset External Param");
+					callLingoQuit(pObj->moaMmValueInterfacePointer, moaDrMovieInterfacePointer);
 					TerminateProcess(GetCurrentProcess(), 0);
 					Throw(kMoaErr_NoErr);
 				}
@@ -505,24 +515,24 @@ MoaError TStdXtra_IMoaMmXScript::XScrpSetExternalParam(PMoaDrCallInfo callPtr, M
 
 		if (strcpy_s(externalParams, externalParamsSize - stringSize(value) - externalParamsSizeOld, name)) {
 			// dangerous - string is in unknown state, so quit
-			callLingoAlert(pObj->pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Set External Param Name");
-			callLingoQuit(pObj->pMoaMmValueInterface, pMoaDrMovieInterface);
+			callLingoAlert(pObj->moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Set External Param Name");
+			callLingoQuit(pObj->moaMmValueInterfacePointer, moaDrMovieInterfacePointer);
 			TerminateProcess(GetCurrentProcess(), 0);
 			Throw(kMoaErr_NoErr);
 		}
 
 		if (strcpy_s(externalParams + stringSize(name), externalParamsSize - stringSize(name) - externalParamsSizeOld, value)) {
 			// dangerous - string is in unknown state, so quit
-			callLingoAlert(pObj->pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Set External Param Value");
-			callLingoQuit(pObj->pMoaMmValueInterface, pMoaDrMovieInterface);
+			callLingoAlert(pObj->moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Set External Param Value");
+			callLingoQuit(pObj->moaMmValueInterfacePointer, moaDrMovieInterfacePointer);
 			TerminateProcess(GetCurrentProcess(), 0);
 			Throw(kMoaErr_NoErr);
 		}
 
 		if (memcpy_s(externalParams + stringSize(name) + stringSize(value), externalParamsSize - stringSize(name) - stringSize(value), externalParamsOld, externalParamsSizeOld)) {
 			// dangerous - memory is in unknown state, so quit
-			callLingoAlert(pObj->pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Set External Params");
-			callLingoQuit(pObj->pMoaMmValueInterface, pMoaDrMovieInterface);
+			callLingoAlert(pObj->moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Set External Params");
+			callLingoQuit(pObj->moaMmValueInterfacePointer, moaDrMovieInterfacePointer);
 			TerminateProcess(GetCurrentProcess(), 0);
 			Throw(kMoaErr_NoErr);
 		}
@@ -533,16 +543,16 @@ MoaError TStdXtra_IMoaMmXScript::XScrpSetExternalParam(PMoaDrCallInfo callPtr, M
 
 		if (strcpy_s(externalParams, externalParamsSize - stringSize(value), name)) {
 			// dangerous - string is in unknown state, so quit
-			callLingoAlert(pObj->pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Set External Param Name");
-			callLingoQuit(pObj->pMoaMmValueInterface, pMoaDrMovieInterface);
+			callLingoAlert(pObj->moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Set External Param Name");
+			callLingoQuit(pObj->moaMmValueInterfacePointer, moaDrMovieInterfacePointer);
 			TerminateProcess(GetCurrentProcess(), 0);
 			Throw(kMoaErr_NoErr);
 		}
 
 		if (strcpy_s(externalParams + stringSize(name), externalParamsSize - stringSize(name), value)) {
 			// dangerous - string is in unknown state, so quit
-			callLingoAlert(pObj->pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Set External Param Value");
-			callLingoQuit(pObj->pMoaMmValueInterface, pMoaDrMovieInterface);
+			callLingoAlert(pObj->moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Set External Param Value");
+			callLingoQuit(pObj->moaMmValueInterfacePointer, moaDrMovieInterfacePointer);
 			TerminateProcess(GetCurrentProcess(), 0);
 			Throw(kMoaErr_NoErr);
 		}
@@ -551,7 +561,7 @@ MoaError TStdXtra_IMoaMmXScript::XScrpSetExternalParam(PMoaDrCallInfo callPtr, M
 	*(PMoaChar)(externalParams + externalParamsSize - 1) = NULL;
 	*(PMoaChar)(externalParams + externalParamsSize - 2) = NULL;
 
-	ThrowErr(XScrpExtender(callPtr, module, pMoaDrMovieInterface));
+	ThrowErr(XScrpExtender(callPtr, module, moaDrMovieInterfacePointer));
 
 	moa_catch
 	moa_catch_end
@@ -561,8 +571,8 @@ MoaError TStdXtra_IMoaMmXScript::XScrpSetExternalParam(PMoaDrCallInfo callPtr, M
 	}
 
 	// don't forget to brush your teeth
-	if (pMoaDrMovieInterface) {
-		pMoaDrMovieInterface->Release();
+	if (moaDrMovieInterfacePointer) {
+		moaDrMovieInterfacePointer->Release();
 	}
 	moa_try_end
 }
@@ -573,12 +583,12 @@ MoaError TStdXtra_IMoaMmXScript::XScrpSetExternalParam(PMoaDrCallInfo callPtr, M
 
 /* Begin Extender */
 struct ModuleDirectorVersionTest {
-	DWORD relativeVirtualAddress;
-	DWORD virtualSize;
+	RELATIVE_VIRTUAL_ADDRESS relativeVirtualAddress;
+	VIRTUAL_SIZE virtualSize;
 	unsigned char* code;
 };
 
-MODULE_DIRECTOR_VERSION getModuleDirectorVersion(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterface, HMODULE moduleHandle, const size_t MODULE_DIRECTOR_VERSION_TESTS_SIZE, ModuleDirectorVersionTest moduleDirectorVersionTests[]) {
+MODULE_DIRECTOR_VERSION getModuleDirectorVersion(PIMoaMmValue moaMmValueInterfacePointer, PIMoaDrMovie moaDrMovieInterfacePointer, HMODULE moduleHandle, const size_t MODULE_DIRECTOR_VERSION_TESTS_SIZE, ModuleDirectorVersionTest moduleDirectorVersionTests[]) {
 	// performs a test to see if this is a supported Director version
 	// it's a simple array of bytes search, nothing more
 	// we support 8.5, 10 and 11.5, so we perform three tests
@@ -587,7 +597,7 @@ MODULE_DIRECTOR_VERSION getModuleDirectorVersion(PIMoaMmValue pMoaMmValueInterfa
 			continue;
 		}
 
-		if (testCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, moduleDirectorVersionTests[i].relativeVirtualAddress, moduleDirectorVersionTests[i].virtualSize, moduleDirectorVersionTests[i].code)) {
+		if (testCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, moduleDirectorVersionTests[i].relativeVirtualAddress, moduleDirectorVersionTests[i].virtualSize, moduleDirectorVersionTests[i].code)) {
 			return (MODULE_DIRECTOR_VERSION)i;
 		}
 	}
@@ -598,62 +608,62 @@ MODULE_DIRECTOR_VERSION getModuleDirectorVersion(PIMoaMmValue pMoaMmValueInterfa
 
 
 // Module Handle Written Code Addresses
-DWORD setTheMoviePathExtendedCodeCompareAddress = 0x00000000;
-DWORD setThePathNameExtendedCodeCompareAddress = 0x00000000;
+EXTENDED_CODE_ADDRESS setTheMoviePathExtendedCodeCompareAddress = 0x00000000;
+EXTENDED_CODE_ADDRESS setThePathNameExtendedCodeCompareAddress = 0x00000000;
 
-DWORD setTheMovieNameExtendedCodeCompareAddress = 0x00000000;
-DWORD setTheMovieExtendedCodeCompareAddress = 0x00000000;
+EXTENDED_CODE_ADDRESS setTheMovieNameExtendedCodeCompareAddress = 0x00000000;
+EXTENDED_CODE_ADDRESS setTheMovieExtendedCodeCompareAddress = 0x00000000;
 
-DWORD setTheEnvironment_shockMachineExtendedCodeReturnAddress = 0x00000000;
+EXTENDED_CODE_ADDRESS setTheEnvironment_shockMachineExtendedCodeReturnAddress = 0x00000000;
 
-DWORD setTheEnvironment_shockMachineVersionExtendedCodeReturnAddress = 0x00000000;
+EXTENDED_CODE_ADDRESS setTheEnvironment_shockMachineVersionExtendedCodeReturnAddress = 0x00000000;
 
-DWORD setThePlatformExtendedCodeCompareAddress = 0x00000000;
-DWORD setTheEnvironment_platformTheEnvironment_osVersionExtendedCodeCompareAddress = 0x00000000;
-DWORD setThePlatformExtendedCodeReturnAddress = 0x00000000;
+EXTENDED_CODE_ADDRESS setThePlatformExtendedCodeCompareAddress = 0x00000000;
+EXTENDED_CODE_ADDRESS setTheEnvironment_platformTheEnvironment_osVersionExtendedCodeCompareAddress = 0x00000000;
+EXTENDED_CODE_ADDRESS setThePlatformExtendedCodeReturnAddress = 0x00000000;
 
-DWORD setTheRunModeTheProductVersionExtendedCodeCompareAddress = 0x00000000;
-DWORD setTheEnvironment_runModeExtendedCodeReturnAddress = 0x00000000;
+EXTENDED_CODE_ADDRESS setTheRunModeTheProductVersionExtendedCodeCompareAddress = 0x00000000;
+EXTENDED_CODE_ADDRESS setTheEnvironment_runModeExtendedCodeReturnAddress = 0x00000000;
 
-DWORD setTheEnvironment_productBuildVersionExtendedCodeCompareAddress = 0x00000000;
-DWORD setTheEnvironment_productBuildVersionExtendedCodeSubroutineAddress = 0x00000000;
+EXTENDED_CODE_ADDRESS setTheEnvironment_productBuildVersionExtendedCodeCompareAddress = 0x00000000;
+EXTENDED_CODE_ADDRESS setTheEnvironment_productBuildVersionExtendedCodeSubroutineAddress = 0x00000000;
 
-DWORD setTheEnvironment_productVersionExtendedCodeReturnAddress = 0x00000000;
+EXTENDED_CODE_ADDRESS setTheEnvironment_productVersionExtendedCodeReturnAddress = 0x00000000;
 
-DWORD setThePlatformTheEnvironment_osVersionExtendedCodeSubroutineAddress = 0x00000000;
+EXTENDED_CODE_ADDRESS setThePlatformTheEnvironment_osVersionExtendedCodeSubroutineAddress = 0x00000000;
 
-DWORD setTheMachineTypeExternalParamCountExtendedCodeCompareAddress = 0x00000000;
-DWORD setTheMachineTypeExtendedCodeSubroutineAddress = 0x00000000;
+EXTENDED_CODE_ADDRESS setTheMachineTypeExternalParamCountExtendedCodeCompareAddress = 0x00000000;
+EXTENDED_CODE_ADDRESS setTheMachineTypeExtendedCodeSubroutineAddress = 0x00000000;
 
-DWORD setExternalParamNameExternalParamValueExtendedCodeCompareAddress = 0x00000000;
-DWORD setExternalParamNameExtendedCodeReturnAddress = 0x00000000;
-DWORD setExternalParamValueExtendedCodeReturnAddress = 0x00000000;
-DWORD setExternalParamCountExtendedCodeReturnAddress = 0x00000000;
-DWORD setExternalParamExtendedCodeSubroutineAddress = 0x00000000;
-DWORD setExternalParamExtendedCodeSubroutineAddress2 = 0x00000000;
-DWORD setExternalParamExtendedCodeSubroutineAddress3 = 0x00000000;
-DWORD setExternalParamExtendedCodeSubroutineAddress4 = 0x00000000;
+EXTENDED_CODE_ADDRESS setExternalParamNameExternalParamValueExtendedCodeCompareAddress = 0x00000000;
+EXTENDED_CODE_ADDRESS setExternalParamNameExtendedCodeReturnAddress = 0x00000000;
+EXTENDED_CODE_ADDRESS setExternalParamValueExtendedCodeReturnAddress = 0x00000000;
+EXTENDED_CODE_ADDRESS setExternalParamCountExtendedCodeReturnAddress = 0x00000000;
+EXTENDED_CODE_ADDRESS setExternalParamExtendedCodeSubroutineAddress = 0x00000000;
+EXTENDED_CODE_ADDRESS setExternalParamExtendedCodeSubroutineAddress2 = 0x00000000;
+EXTENDED_CODE_ADDRESS setExternalParamExtendedCodeSubroutineAddress3 = 0x00000000;
+EXTENDED_CODE_ADDRESS setExternalParamExtendedCodeSubroutineAddress4 = 0x00000000;
 
-DWORD forceTheExitLockExtendedCodeReturnAddress = 0x00000000;
+EXTENDED_CODE_ADDRESS forceTheExitLockExtendedCodeReturnAddress = 0x00000000;
 
-DWORD forceTheSafePlayerExtendedCodeReturnAddress = 0x00000000;
-DWORD forceTheSafePlayerExtendedCodeSubroutineAddress = 0x00000000;
-DWORD forceTheSafePlayerExtendedCodeSubroutineAddress2 = 0x00000000;
-DWORD forceTheSafePlayerExtendedCodeSubroutineAddress3 = 0x00000000;
-DWORD forceTheSafePlayerExtendedCodeSubroutineAddress4 = 0x00000000;
+EXTENDED_CODE_ADDRESS forceTheSafePlayerExtendedCodeReturnAddress = 0x00000000;
+EXTENDED_CODE_ADDRESS forceTheSafePlayerExtendedCodeSubroutineAddress = 0x00000000;
+EXTENDED_CODE_ADDRESS forceTheSafePlayerExtendedCodeSubroutineAddress2 = 0x00000000;
+EXTENDED_CODE_ADDRESS forceTheSafePlayerExtendedCodeSubroutineAddress3 = 0x00000000;
+EXTENDED_CODE_ADDRESS forceTheSafePlayerExtendedCodeSubroutineAddress4 = 0x00000000;
 
-DWORD bugfixShockwave3DBadDriverListExtendedCodeReturnAddress = 0x00000000;
+EXTENDED_CODE_ADDRESS bugfixShockwave3DBadDriverListExtendedCodeReturnAddress = 0x00000000;
 
-DWORD bugfixShockwave3DBadDriverList2ExtendedCodeReturnAddress = 0x00000000;
+EXTENDED_CODE_ADDRESS bugfixShockwave3DBadDriverList2ExtendedCodeReturnAddress = 0x00000000;
 
-DWORD theEnvironmentCompareAddress = 0x00000000;
+EXTENDED_CODE_ADDRESS theEnvironmentCompareAddress = 0x00000000;
 
-DWORD lingoCallCompareAddress = 0x00000000;
-DWORD lingoCallCompareAddress2 = 0x00000000;
-DWORD lingoCallCompareAddress3 = 0x00000000;
-DWORD lingoCallCompareAddress4 = 0x00000000;
+EXTENDED_CODE_ADDRESS lingoCallCompareAddress = 0x00000000;
+EXTENDED_CODE_ADDRESS lingoCallCompareAddress2 = 0x00000000;
+EXTENDED_CODE_ADDRESS lingoCallCompareAddress3 = 0x00000000;
+EXTENDED_CODE_ADDRESS lingoCallCompareAddress4 = 0x00000000;
 
-DWORD exceptionHandlerSubroutineAddress = 0x00000000;
+EXTENDED_CODE_ADDRESS exceptionHandlerSubroutineAddress = 0x00000000;
 
 __declspec(naked) void setTheMoviePathExtendedCode8() {
 	__asm {
@@ -3307,7 +3317,7 @@ __declspec(naked) void setTheEnvironment_shockMachineExtendedCode11() {
 		// compare to the environment.shockMachine
 		mov eax, [esp + 00000930h];
 		cmp eax, [theEnvironmentCompareAddress];
-		jnz do_not_set;
+		jnz compare_to_the_environment_shockmachine_odd;
 
 		// compare to Lingo Call for the environment.shockMachine
 		mov eax, [esp + 00000DACh];
@@ -3317,6 +3327,23 @@ __declspec(naked) void setTheEnvironment_shockMachineExtendedCode11() {
 
 		compare_to__system_environmentproplist_shockmachine:
 		mov eax, [esp + 00000994h];
+		cmp eax, [lingoCallCompareAddress4];
+		jnz do_not_set;
+		jmp set;
+
+		compare_to_the_environment_shockmachine_odd:
+		mov eax, [esp + 0000092Ch];
+		cmp eax, [theEnvironmentCompareAddress];
+		jnz do_not_set;
+
+		// compare to Lingo Call for the environment.shockMachine
+		mov eax, [esp + 00000DA8h];
+		cmp eax, [lingoCallCompareAddress];
+		jnz compare_to__system_environmentproplist_shockmachine_odd;
+		jmp set;
+
+		compare_to__system_environmentproplist_shockmachine_odd:
+		mov eax, [esp + 00000990h];
 		cmp eax, [lingoCallCompareAddress4];
 		jnz do_not_set;
 
@@ -3341,7 +3368,7 @@ __declspec(naked) void setTheEnvironment_shockMachineVersionExtendedCode11() {
 		// compare to the environment.shockMachineVersion
 		mov eax, [esp + 00000938h];
 		cmp eax, [theEnvironmentCompareAddress];
-		jnz do_not_set;
+		jnz compare_to_the_environment_shockmachineversion_odd;
 
 		// compare to Lingo Call for the environment.shockMachineVersion
 		mov eax, [esp + 00000DB4h];
@@ -3351,6 +3378,23 @@ __declspec(naked) void setTheEnvironment_shockMachineVersionExtendedCode11() {
 
 		compare_to__system_environmentproplist_shockmachineversion:
 		mov eax, [esp + 0000099Ch];
+		cmp eax, [lingoCallCompareAddress4];
+		jnz do_not_set;
+		jmp set;
+
+		compare_to_the_environment_shockmachineversion_odd:
+		mov eax, [esp + 00000934h];
+		cmp eax, [theEnvironmentCompareAddress];
+		jnz do_not_set;
+
+		// compare to Lingo Call for the environment.shockMachineVersion
+		mov eax, [esp + 00000DB0h];
+		cmp eax, [lingoCallCompareAddress];
+		jnz compare_to__system_environmentproplist_shockmachineversion_odd;
+		jmp set;
+
+		compare_to__system_environmentproplist_shockmachineversion_odd:
+		mov eax, [esp + 00000998h];
 		cmp eax, [lingoCallCompareAddress4];
 		jnz do_not_set;
 
@@ -3404,6 +3448,18 @@ __declspec(naked) void setThePlatformExtendedCode11() {
 
 		compare_to__system_environmentproplist_platform:
 		mov eax, [esp + 00000DA0h];
+		cmp eax, [lingoCallCompareAddress4];
+		jnz compare_to_the_environment_platform_odd;
+		jmp set;
+
+		compare_to_the_environment_platform_odd:
+		mov eax, [esp + 000011B4h];
+		cmp eax, [lingoCallCompareAddress];
+		jnz compare_to__system_environmentproplist_platform_odd;
+		jmp set;
+
+		compare_to__system_environmentproplist_platform_odd:
+		mov eax, [esp + 00000D9Ch];
 		cmp eax, [lingoCallCompareAddress4];
 		jnz do_not_set;
 
@@ -3483,7 +3539,7 @@ __declspec(naked) void setTheEnvironment_runModeExtendedCode11() {
 		// compare to the environment.runMode
 		mov eax, [esp + 0000092Ch];
 		cmp eax, [theEnvironmentCompareAddress];
-		jnz do_not_set;
+		jnz compare_to_the_environment_runmode_odd;
 
 		// compare to Lingo Call for the environment.runMode
 		mov eax, [esp + 00000DA8h];
@@ -3493,6 +3549,23 @@ __declspec(naked) void setTheEnvironment_runModeExtendedCode11() {
 
 		compare_to__system_environmentproplist_runmode:
 		mov eax, [esp + 00000990h];
+		cmp eax, [lingoCallCompareAddress4];
+		jnz do_not_set;
+		jmp set;
+
+		compare_to_the_environment_runmode_odd:
+		mov eax, [esp + 00000928h];
+		cmp eax, [theEnvironmentCompareAddress];
+		jnz do_not_set;
+
+		// compare to Lingo Call for the environment.runMode
+		mov eax, [esp + 00000DA4h];
+		cmp eax, [lingoCallCompareAddress];
+		jnz compare_to__system_environmentproplist_runmode_odd;
+		jmp set;
+
+		compare_to__system_environmentproplist_runmode_odd:
+		mov eax, [esp + 0000098Ch];
 		cmp eax, [lingoCallCompareAddress4];
 		jnz do_not_set;
 
@@ -3530,7 +3603,7 @@ __declspec(naked) void setTheEnvironment_productBuildVersionExtendedCode11() {
 		// compare to the environment.productBuildVersion
 		mov eax, [esp + 0000042Ch];
 		cmp eax, [setTheEnvironment_productBuildVersionExtendedCodeCompareAddress];
-		jnz do_not_set;
+		jnz compare_to_the_environment_productbuildversion_odd;
 
 		// compare to Lingo Call for the productBuildVersion
 		mov eax, [esp + 000011E4h];
@@ -3540,6 +3613,23 @@ __declspec(naked) void setTheEnvironment_productBuildVersionExtendedCode11() {
 
 		compare_to__system_environmentproplist_productbuildversion:
 		mov eax, [esp + 00000DCCh];
+		cmp eax, [lingoCallCompareAddress4];
+		jnz do_not_set;
+		jmp set;
+
+		compare_to_the_environment_productbuildversion_odd:
+		mov eax, [esp + 00000428h];
+		cmp eax, [setTheEnvironment_productBuildVersionExtendedCodeCompareAddress];
+		jnz do_not_set;
+
+		// compare to Lingo Call for the productBuildVersion
+		mov eax, [esp + 000011E0h];
+		cmp eax, [lingoCallCompareAddress];
+		jnz compare_to__system_environmentproplist_productbuildversion_odd;
+		jmp set;
+
+		compare_to__system_environmentproplist_productbuildversion_odd:
+		mov eax, [esp + 00000DC8h];
 		cmp eax, [lingoCallCompareAddress4];
 		jnz do_not_set;
 
@@ -3621,7 +3711,7 @@ __declspec(naked) void setTheEnvironment_productVersionExtendedCode11() {
 		// compare to the environment.productVersion
 		mov eax, [esp + 0000092Ch];
 		cmp eax, [theEnvironmentCompareAddress];
-		jnz do_not_set;
+		jnz compare_to_the_environment_productversion_odd;
 
 		// compare to Lingo Call for the environment.productVersion
 		mov eax, [esp + 00000DA8h];
@@ -3631,6 +3721,23 @@ __declspec(naked) void setTheEnvironment_productVersionExtendedCode11() {
 
 		compare_to__system_environmentproplist_productversion:
 		mov eax, [esp + 00000990h];
+		cmp eax, [lingoCallCompareAddress4];
+		jnz do_not_set;
+		jmp set;
+
+		compare_to_the_environment_productversion_odd:
+		mov eax, [esp + 00000928h];
+		cmp eax, [theEnvironmentCompareAddress];
+		jnz do_not_set;
+
+		// compare to Lingo Call for the environment.productVersion
+		mov eax, [esp + 00000DA4h];
+		cmp eax, [lingoCallCompareAddress];
+		jnz compare_to__system_environmentproplist_productversion_odd;
+		jmp set;
+
+		compare_to__system_environmentproplist_productversion_odd:
+		mov eax, [esp + 0000098Ch];
 		cmp eax, [lingoCallCompareAddress4];
 		jnz do_not_set;
 
@@ -3682,6 +3789,18 @@ __declspec(naked) void setTheEnvironment_osVersionExtendedCode11() {
 
 		compare_to__system_environmentproplist_osversion:
 		mov eax, [esp + 00000DA0h];
+		cmp eax, [lingoCallCompareAddress4];
+		jnz compare_to_the_environment_osversion_odd;
+		jmp set;
+
+		compare_to_the_environment_osversion_odd:
+		mov eax, [esp + 000011B4h];
+		cmp eax, [lingoCallCompareAddress];
+		jnz compare_to__system_environmentproplist_osversion_odd;
+		jmp set;
+
+		compare_to__system_environmentproplist_osversion_odd:
+		mov eax, [esp + 00000D9Ch];
 		cmp eax, [lingoCallCompareAddress4];
 		jnz do_not_set;
 
@@ -4363,6 +4482,22 @@ __declspec(naked) void setTheMachineTypeExtendedCode1159() {
 #define forceTheSafePlayerExtendedCode1159 forceTheSafePlayerExtendedCode11
 
 #define bugfixShockwave3DBadDriverListExtendedCode1159 bugfixShockwave3DBadDriverListExtendedCode1158
+
+__declspec(naked) void bugfixShockwave3DBadDriverListExtendedCode1165() {
+	__asm {
+		call edi;
+		cmp eax, esi;
+		jnz epilogue2;
+		mov eax, [esp - 00000004h];
+		mov eax, [eax];
+		add eax, 00000214h;
+		push eax;
+		jmp [bugfixShockwave3DBadDriverListExtendedCodeReturnAddress];
+
+	epilogue2:
+		jmp [bugfixShockwave3DBadDriverList2ExtendedCodeReturnAddress];
+	}
+}
 
 __declspec(naked) void setTheMoviePathExtendedCode12() {
 	__asm {
@@ -5242,21 +5377,7 @@ __declspec(naked) void forceTheSafePlayerExtendedCode12() {
 	}
 }
 
-__declspec(naked) void bugfixShockwave3DBadDriverListExtendedCode12() {
-	__asm {
-		call edi;
-		cmp eax, esi;
-		jnz epilogue2;
-		mov eax, [esp - 00000004h];
-		mov eax, [eax];
-		add eax, 00000214h;
-		push eax;
-		jmp [bugfixShockwave3DBadDriverListExtendedCodeReturnAddress];
-
-		epilogue2:
-		jmp [bugfixShockwave3DBadDriverList2ExtendedCodeReturnAddress];
-	}
-}
+#define bugfixShockwave3DBadDriverListExtendedCode12 bugfixShockwave3DBadDriverListExtendedCode1165
 
 __declspec(naked) void disableGoToNetThingExtendedCode() {
 	__asm {
@@ -5264,39 +5385,43 @@ __declspec(naked) void disableGoToNetThingExtendedCode() {
 	}
 }
 
-bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterface, MoaMmSymbol methodSelector, MODULE module) {
+bool extender(PIMoaMmValue moaMmValueInterfacePointer, PIMoaDrMovie moaDrMovieInterfacePointer, MoaMmSymbol methodSelector, MODULE module) {
 	HMODULE moduleHandle = NULL;
+
+	if (!moaMmValueInterfacePointer || !moaDrMovieInterfacePointer) {
+		return false;
+	}
 
 	switch (module) {
 		case MODULE_DIRECTOR_API:
 		moduleHandle = GetModuleHandle("DIRAPI");
 		break;
 		case MODULE_NET_LINGO_XTRA:
-		moduleHandle = GetModuleHandle("NetLingo.x32");
-
-		if (!moduleHandle) {
-			if (!callLingoVoidPNewXtra(pMoaMmValueInterface, pMoaDrMovieInterface, "NetLingo")) {
+		if (!netLingoNewResultSet) {
+			if (!callLingoVoidPNewXtra(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "NetLingo", &netLingoNewResult)) {
 				return false;
 			}
 
-			moduleHandle = GetModuleHandle("NetLingo.x32");
+			netLingoNewResultSet = true;
 		}
+
+		moduleHandle = GetModuleHandle("NetLingo.x32");
 		break;
 		case MODULE_SHOCKWAVE_3D_ASSET_XTRA:
-		moduleHandle = GetModuleHandle("Shockwave 3D Asset.x32");
-
-		if (!moduleHandle) {
-			if (!callLingoVoidPNewXtra(pMoaMmValueInterface, pMoaDrMovieInterface, "Shockwave3DAsset")) {
+		if (!shockwave3DAssetNewResultSet) {
+			if (!callLingoVoidPNewXtra(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Shockwave3DAsset", &shockwave3DAssetNewResult)) {
 				return false;
 			}
 
-			moduleHandle = GetModuleHandle("Shockwave 3D Asset.x32");
+			shockwave3DAssetNewResultSet = true;
 		}
+
+		moduleHandle = GetModuleHandle("Shockwave 3D Asset.x32");
 	}
 
 	// here is the first check that the Module Handle is valid
 	if (!moduleHandle) {
-		callLingoAlertXtraMissing(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to get Module Handle");
+		callLingoAlertXtraMissing(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to get Module Handle");
 		return false;
 	}
 
@@ -5350,14 +5475,14 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 			const size_t DIRECTOR_API_VERSION_12_TEST_CODE_SIZE = 14;
 			unsigned char directorAPIVersion12TestCode[DIRECTOR_API_VERSION_12_TEST_CODE_SIZE] = {0x3D, 0xF3, 0x00, 0x00, 0x00, 0x0F, 0x87, 0xE7, 0x1F, 0x00, 0x00, 0x0F, 0xB6, 0x88};
 			
-			const size_t DIRECTOR_API_DIRECTOR_VERSION_TESTS_SIZE = 13;
-			ModuleDirectorVersionTest directorAPIVersionTests[DIRECTOR_API_DIRECTOR_VERSION_TESTS_SIZE] = {{0x000EEC9C, DIRECTOR_API_VERSION_8_TEST_CODE_SIZE, directorAPIVersion8TestCode}, {0x000C8440, DIRECTOR_API_VERSION_85_TEST_CODE_SIZE, directorAPIVersion85TestCode}, {0x000C84C0, DIRECTOR_API_VERSION_851_TEST_CODE_SIZE, directorAPIVersion851TestCode}, {0x000BC9A0, DIRECTOR_API_VERSION_9_TEST_CODE_SIZE, directorAPIVersion9TestCode}, {0x000D5684, DIRECTOR_API_VERSION_10_TEST_CODE_SIZE, directorAPIVersion10TestCode}, {0x000D6A74, DIRECTOR_API_VERSION_101_TEST_CODE_SIZE, directorAPIVersion101TestCode}, {0x000D6E24, DIRECTOR_API_VERSION_1011_TEST_CODE_SIZE, directorAPIVersion1011TestCode}, {0x0010ED0E, DIRECTOR_API_VERSION_11_TEST_CODE_SIZE, directorAPIVersion11TestCode}, {0x0010EC9E, DIRECTOR_API_VERSION_1103_TEST_CODE_SIZE, directorAPIVersion1103TestCode}, {0x001118FE, DIRECTOR_API_VERSION_115_TEST_CODE_SIZE, directorAPIVersion115TestCode}, {0x0011245E, DIRECTOR_API_VERSION_1158_TEST_CODE_SIZE, directorAPIVersion1158TestCode}, {0x001149E3, DIRECTOR_API_VERSION_1159_TEST_CODE_SIZE, directorAPIVersion1159TestCode}, {0x00034BF8, DIRECTOR_API_VERSION_12_TEST_CODE_SIZE, directorAPIVersion12TestCode}};
+			const size_t DIRECTOR_API_DIRECTOR_VERSION_TESTS_SIZE = 14;
+			ModuleDirectorVersionTest directorAPIVersionTests[DIRECTOR_API_DIRECTOR_VERSION_TESTS_SIZE] = {{0x000EEC9C, DIRECTOR_API_VERSION_8_TEST_CODE_SIZE, directorAPIVersion8TestCode}, {0x000C8440, DIRECTOR_API_VERSION_85_TEST_CODE_SIZE, directorAPIVersion85TestCode}, {0x000C84C0, DIRECTOR_API_VERSION_851_TEST_CODE_SIZE, directorAPIVersion851TestCode}, {0x000BC9A0, DIRECTOR_API_VERSION_9_TEST_CODE_SIZE, directorAPIVersion9TestCode}, {0x000D5684, DIRECTOR_API_VERSION_10_TEST_CODE_SIZE, directorAPIVersion10TestCode}, {0x000D6A74, DIRECTOR_API_VERSION_101_TEST_CODE_SIZE, directorAPIVersion101TestCode}, {0x000D6E24, DIRECTOR_API_VERSION_1011_TEST_CODE_SIZE, directorAPIVersion1011TestCode}, {0x0010ED0E, DIRECTOR_API_VERSION_11_TEST_CODE_SIZE, directorAPIVersion11TestCode}, {0x0010EC9E, DIRECTOR_API_VERSION_1103_TEST_CODE_SIZE, directorAPIVersion1103TestCode}, {0x001118FE, DIRECTOR_API_VERSION_115_TEST_CODE_SIZE, directorAPIVersion115TestCode}, {0x0011245E, DIRECTOR_API_VERSION_1158_TEST_CODE_SIZE, directorAPIVersion1158TestCode}, {0x001149E3, DIRECTOR_API_VERSION_1159_TEST_CODE_SIZE, directorAPIVersion1159TestCode}, {0x00000000, 0, {}}, {0x00034BF8, DIRECTOR_API_VERSION_12_TEST_CODE_SIZE, directorAPIVersion12TestCode}};
 			
-			directorAPIDirectorVersion = getModuleDirectorVersion(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, DIRECTOR_API_DIRECTOR_VERSION_TESTS_SIZE, directorAPIVersionTests);
+			directorAPIDirectorVersion = getModuleDirectorVersion(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, DIRECTOR_API_DIRECTOR_VERSION_TESTS_SIZE, directorAPIVersionTests);
 		}
 
 		if (directorAPIDirectorVersion == MODULE_DIRECTOR_INCOMPATIBLE) {
-			callLingoAlertIncompatibleDirectorVersion(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Get Module Director Version");
+			callLingoAlertIncompatibleDirectorVersion(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Get Module Director Version");
 			return false;
 		}
 
@@ -5372,33 +5497,33 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				setThePathNameExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x00103F89);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000EEC9F);
 				lingoCallCompareAddress2 = createExtendedCodeAddress(moduleHandle, 0x000EEC9F);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x0000F43F, setTheMoviePathExtendedCode8);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x0000F43F, setTheMoviePathExtendedCode8);
 				break;
 				case m_setTheMovieName:
 				setTheMovieNameExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000C1213);
 				setTheMovieExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x00103F49);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000EEC9F);
 				lingoCallCompareAddress2 = createExtendedCodeAddress(moduleHandle, 0x000EEC9F);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x0000F319, setTheMovieNameExtendedCode8);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x0000F319, setTheMovieNameExtendedCode8);
 				break;
 				case m_setTheEnvironment_shockMachine:
 				setTheEnvironment_shockMachineExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x000C56D0);
 				theEnvironmentCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000C272A);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000EEC9F);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000C56C9, setTheEnvironment_shockMachineExtendedCode8);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000C56C9, setTheEnvironment_shockMachineExtendedCode8);
 				break;
 				case m_setTheEnvironment_shockMachineVersion:
 				setTheEnvironment_shockMachineVersionExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x000C572B);
 				theEnvironmentCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000C272A);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000EEC9F);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000C5720, setTheEnvironment_shockMachineVersionExtendedCode8);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000C5720, setTheEnvironment_shockMachineVersionExtendedCode8);
 				break;
 				case m_setThePlatform:
 				setThePlatformExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000C1D4B);
 				setTheEnvironment_platformTheEnvironment_osVersionExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000C5764);
 				setThePlatformTheEnvironment_osVersionExtendedCodeSubroutineAddress = createExtendedCodeAddress(moduleHandle, 0x000BE5C4);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000EEC9F);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x00020E55, setThePlatformExtendedCode8);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x00020E55, setThePlatformExtendedCode8);
 				break;
 				case m_setTheRunMode:
 				setTheRunModeTheProductVersionExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000C1DE1);
@@ -5406,24 +5531,24 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				theEnvironmentCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000C272A);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000EEC9F);
 
-				if (!extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000465B9, setTheRunModeExtendedCode8)) {
-					callLingoAlertAntivirus(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Extend Code");
+				if (!extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000465B9, setTheRunModeExtendedCode8)) {
+					callLingoAlertAntivirus(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Extend Code");
 					return false;
 				}
 
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000C57C0, setTheEnvironment_runModeExtendedCode8);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000C57C0, setTheEnvironment_runModeExtendedCode8);
 				break;
 				case m_setTheEnvironment_productBuildVersion:
 				setTheEnvironment_productBuildVersionExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000C5956);
 				setTheEnvironment_productBuildVersionExtendedCodeSubroutineAddress = createExtendedCodeAddress(moduleHandle, 0x000BE3C0);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000EEC9F);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x0003671F, setTheEnvironment_productBuildVersionExtendedCode8);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x0003671F, setTheEnvironment_productBuildVersionExtendedCode8);
 				break;
 				case m_setTheProductVersion:
 				// the environment.productVersion does not exist
 				setTheRunModeTheProductVersionExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000C1DE1);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000EEC9F);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x00046673 - 0x00000010, setTheProductVersionExtendedCode8);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x00046673 - 0x00000010, setTheProductVersionExtendedCode8);
 				break;
 				case m_setTheEnvironment_osVersion:
 				// the environment.osVersion does not exist
@@ -5433,7 +5558,7 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				setTheMachineTypeExternalParamCountExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000EDDA6);
 				setTheMachineTypeExtendedCodeSubroutineAddress = createExtendedCodeAddress(moduleHandle, 0x00020E40);
 				lingoCallCompareAddress2 = createExtendedCodeAddress(moduleHandle, 0x000EEC9F);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x00103E95, setTheMachineTypeExtendedCode8);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x00103E95, setTheMachineTypeExtendedCode8);
 				break;
 				case m_setExternalParam:
 				setExternalParamNameExternalParamValueExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000EDD10);
@@ -5446,33 +5571,33 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				setExternalParamExtendedCodeSubroutineAddress3 = createExtendedCodeAddress(moduleHandle, 0x000BE36C);
 				setExternalParamExtendedCodeSubroutineAddress4 = createExtendedCodeAddress(moduleHandle, 0x001047A0);
 
-				if (!extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x00104738, setExternalParamNameExtendedCode8)) {
-					callLingoAlertAntivirus(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Extend Code");
+				if (!extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x00104738, setExternalParamNameExtendedCode8)) {
+					callLingoAlertAntivirus(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Extend Code");
 					return false;
 				}
 
-				if (!extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x00104888, setExternalParamValueExtendedCode8)) {
-					callLingoAlertAntivirus(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Extend Code");
+				if (!extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x00104888, setExternalParamValueExtendedCode8)) {
+					callLingoAlertAntivirus(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Extend Code");
 					return false;
 				}
 
 				// we have to update the count of External Params too
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x001046C5, setExternalParamCountExtendedCode8);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x001046C5, setExternalParamCountExtendedCode8);
 				break;
 				case m_forceTheExitLock:
 				forceTheExitLockExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x00014EB3);
 
-				if (!extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000149C5, forceTheExitLockExtendedCode8)) {
-					callLingoAlertAntivirus(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Extend Code");
+				if (!extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000149C5, forceTheExitLockExtendedCode8)) {
+					callLingoAlertAntivirus(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Extend Code");
 					return false;
 				}
 
-				if (!extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000098C0, forceTheExitLockExtendedCode238)) {
-					callLingoAlertAntivirus(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Extend Code");
+				if (!extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000098C0, forceTheExitLockExtendedCode238)) {
+					callLingoAlertAntivirus(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Extend Code");
 					return false;
 				}
 
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x0000C130, forceTheExitLockExtendedCode238);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x0000C130, forceTheExitLockExtendedCode238);
 				break;
 				case m_forceTheSafePlayer:
 				forceTheSafePlayerExtendedCodeSubroutineAddress = createExtendedCodeAddress(moduleHandle, 0x0000E650);
@@ -5480,9 +5605,9 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				forceTheSafePlayerExtendedCodeSubroutineAddress3 = createExtendedCodeAddress(moduleHandle, 0x0005BB90);
 				forceTheSafePlayerExtendedCodeSubroutineAddress4 = createExtendedCodeAddress(moduleHandle, 0x000BE62A);
 				forceTheSafePlayerExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x0002239C);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x00022319, forceTheSafePlayerExtendedCode8);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x00022319, forceTheSafePlayerExtendedCode8);
 
-				if (!setLingoSafePlayer(pMoaMmValueInterface, pMoaDrMovieInterface, theSafePlayer)) {
+				if (!setLingoSafePlayer(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, theSafePlayer)) {
 					return false;
 				}
 			}
@@ -5494,26 +5619,26 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				setThePathNameExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000A88FA);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000C9E6A);
 				lingoCallCompareAddress2 = createExtendedCodeAddress(moduleHandle, 0x000CA275);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x0000D16E, setTheMoviePathExtendedCode85);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x0000D16E, setTheMoviePathExtendedCode85);
 				break;
 				case m_setTheMovieName:
 				setTheMovieNameExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000A95B5);
 				setTheMovieExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000A88BF);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000C9E6A);
 				lingoCallCompareAddress2 = createExtendedCodeAddress(moduleHandle, 0x000CA275);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x0000D073, setTheMovieNameExtendedCode85);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x0000D073, setTheMovieNameExtendedCode85);
 				break;
 				case m_setTheEnvironment_shockMachine:
 				setTheEnvironment_shockMachineExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x000AC1A6);
 				theEnvironmentCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000AA244);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000C9E6A);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000AC19A, setTheEnvironment_shockMachineExtendedCode85);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000AC19A, setTheEnvironment_shockMachineExtendedCode85);
 				break;
 				case m_setTheEnvironment_shockMachineVersion:
 				setTheEnvironment_shockMachineVersionExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x000AC1F9);
 				theEnvironmentCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000AA244);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000C9E6A);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000AC1EF, setTheEnvironment_shockMachineVersionExtendedCode85);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000AC1EF, setTheEnvironment_shockMachineVersionExtendedCode85);
 				break;
 				case m_setThePlatform:
 				setThePlatformExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000A9CB3);
@@ -5521,7 +5646,7 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				setThePlatformTheEnvironment_osVersionExtendedCodeSubroutineAddress = createExtendedCodeAddress(moduleHandle, 0x000A2B28);
 				setThePlatformExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x0001BA21);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000C9E6A);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x0001BA18, setThePlatformExtendedCode85);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x0001BA18, setThePlatformExtendedCode85);
 				break;
 				case m_setTheRunMode:
 				setTheRunModeTheProductVersionExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000A9D11);
@@ -5529,17 +5654,17 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				theEnvironmentCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000AA244);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000C9E6A);
 
-				if (!extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x0003B8A8, setTheRunModeExtendedCode85)) {
-					callLingoAlertAntivirus(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Extend Code");
+				if (!extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x0003B8A8, setTheRunModeExtendedCode85)) {
+					callLingoAlertAntivirus(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Extend Code");
 					return false;
 				}
 
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000AC299, setTheEnvironment_runModeExtendedCode85);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000AC299, setTheEnvironment_runModeExtendedCode85);
 				break;
 				case m_setTheEnvironment_productBuildVersion:
 				setTheEnvironment_productBuildVersionExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000AC41A);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000C9E6A);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x0003B942, setTheEnvironment_productBuildVersionExtendedCode85);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x0003B942, setTheEnvironment_productBuildVersionExtendedCode85);
 				break;
 				case m_setTheProductVersion:
 				setTheRunModeTheProductVersionExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000A9D11);
@@ -5547,24 +5672,24 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				theEnvironmentCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000AA244);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000C9E6A);
 
-				if (!extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x0003B90C, setTheProductVersionExtendedCode85)) {
-					callLingoAlertAntivirus(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Extend Code");
+				if (!extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x0003B90C, setTheProductVersionExtendedCode85)) {
+					callLingoAlertAntivirus(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Extend Code");
 					return false;
 				}
 
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000AC46F, setTheEnvironment_productVersionExtendedCode85);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000AC46F, setTheEnvironment_productVersionExtendedCode85);
 				break;
 				case m_setTheEnvironment_osVersion:
 				setTheEnvironment_platformTheEnvironment_osVersionExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000AC236);
 				setThePlatformTheEnvironment_osVersionExtendedCodeSubroutineAddress = createExtendedCodeAddress(moduleHandle, 0x000A2B28);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000C9E6A);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x0001BA27, setTheEnvironment_osVersionExtendedCode85);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x0001BA27, setTheEnvironment_osVersionExtendedCode85);
 				break;
 				case m_setTheMachineType:
 				setTheMachineTypeExternalParamCountExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000C74F4);
 				setTheMachineTypeExtendedCodeSubroutineAddress = createExtendedCodeAddress(moduleHandle, 0x0001B9FB);
 				lingoCallCompareAddress2 = createExtendedCodeAddress(moduleHandle, 0x000CA275);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000A8826, setTheMachineTypeExtendedCode85);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000A8826, setTheMachineTypeExtendedCode85);
 				break;
 				case m_setExternalParam:
 				setExternalParamNameExternalParamValueExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000C7422);
@@ -5577,33 +5702,33 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				setExternalParamExtendedCodeSubroutineAddress3 = createExtendedCodeAddress(moduleHandle, 0x000A28BE);
 				setExternalParamExtendedCodeSubroutineAddress4 = createExtendedCodeAddress(moduleHandle, 0x000B8AA9);
 
-				if (!extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000A8F29, setExternalParamNameExtendedCode85)) {
-					callLingoAlertAntivirus(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Extend Code");
+				if (!extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000A8F29, setExternalParamNameExtendedCode85)) {
+					callLingoAlertAntivirus(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Extend Code");
 					return false;
 				}
 
-				if (!extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000A9038, setExternalParamValueExtendedCode85)) {
-					callLingoAlertAntivirus(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Extend Code");
+				if (!extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000A9038, setExternalParamValueExtendedCode85)) {
+					callLingoAlertAntivirus(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Extend Code");
 					return false;
 				}
 
 				// we have to update the count of External Params too
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000A8ECF, setExternalParamCountExtendedCode85);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000A8ECF, setExternalParamCountExtendedCode85);
 				break;
 				case m_forceTheExitLock:
 				forceTheExitLockExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x0001152C);
 
-				if (!extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x0001165E, forceTheExitLockExtendedCode85)) {
-					callLingoAlertAntivirus(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Extend Code");
+				if (!extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x0001165E, forceTheExitLockExtendedCode85)) {
+					callLingoAlertAntivirus(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Extend Code");
 					return false;
 				}
 
-				if (!extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x00008462, forceTheExitLockExtendedCode2385)) {
-					callLingoAlertAntivirus(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Extend Code");
+				if (!extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x00008462, forceTheExitLockExtendedCode2385)) {
+					callLingoAlertAntivirus(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Extend Code");
 					return false;
 				}
 
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x0000A4AB, forceTheExitLockExtendedCode2385);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x0000A4AB, forceTheExitLockExtendedCode2385);
 				break;
 				case m_forceTheSafePlayer:
 				forceTheSafePlayerExtendedCodeSubroutineAddress = createExtendedCodeAddress(moduleHandle, 0x0000C4B1);
@@ -5611,9 +5736,9 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				forceTheSafePlayerExtendedCodeSubroutineAddress3 = createExtendedCodeAddress(moduleHandle, 0x0002CD09);
 				forceTheSafePlayerExtendedCodeSubroutineAddress4 = createExtendedCodeAddress(moduleHandle, 0x000A2B8E);
 				forceTheSafePlayerExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x0001CB1D);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x0001CAEB, forceTheSafePlayerExtendedCode85);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x0001CAEB, forceTheSafePlayerExtendedCode85);
 
-				if (!setLingoSafePlayer(pMoaMmValueInterface, pMoaDrMovieInterface, theSafePlayer)) {
+				if (!setLingoSafePlayer(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, theSafePlayer)) {
 					return false;
 				}
 			}
@@ -5625,26 +5750,26 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				setThePathNameExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000A8960);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000C9EEA);
 				lingoCallCompareAddress2 = createExtendedCodeAddress(moduleHandle, 0x000CA2F5);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x0000D1A2, setTheMoviePathExtendedCode851);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x0000D1A2, setTheMoviePathExtendedCode851);
 				break;
 				case m_setTheMovieName:
 				setTheMovieNameExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000A961B);
 				setTheMovieExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000A8925);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000C9EEA);
 				lingoCallCompareAddress2 = createExtendedCodeAddress(moduleHandle, 0x000CA2F5);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x0000D0A7, setTheMovieNameExtendedCode851);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x0000D0A7, setTheMovieNameExtendedCode851);
 				break;
 				case m_setTheEnvironment_shockMachine:
 				setTheEnvironment_shockMachineExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x000AC21A);
 				theEnvironmentCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000AA2AA);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000C9EEA);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000AC20E, setTheEnvironment_shockMachineExtendedCode851);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000AC20E, setTheEnvironment_shockMachineExtendedCode851);
 				break;
 				case m_setTheEnvironment_shockMachineVersion:
 				setTheEnvironment_shockMachineVersionExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x000AC26D);
 				theEnvironmentCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000AA2AA);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000C9EEA);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000AC263, setTheEnvironment_shockMachineVersionExtendedCode851);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000AC263, setTheEnvironment_shockMachineVersionExtendedCode851);
 				break;
 				case m_setThePlatform:
 				setThePlatformExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000A9D19);
@@ -5652,7 +5777,7 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				setThePlatformTheEnvironment_osVersionExtendedCodeSubroutineAddress = createExtendedCodeAddress(moduleHandle, 0x000A2B88);
 				setThePlatformExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x0001BA5A);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000C9EEA);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x0001BA51, setThePlatformExtendedCode851);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x0001BA51, setThePlatformExtendedCode851);
 				break;
 				case m_setTheRunMode:
 				setTheRunModeTheProductVersionExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000A9D77);
@@ -5660,17 +5785,17 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				theEnvironmentCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000AA2AA);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000C9EEA);
 
-				if (!extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x0003B8D9, setTheRunModeExtendedCode851)) {
-					callLingoAlertAntivirus(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Extend Code");
+				if (!extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x0003B8D9, setTheRunModeExtendedCode851)) {
+					callLingoAlertAntivirus(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Extend Code");
 					return false;
 				}
 
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000AC30D, setTheEnvironment_runModeExtendedCode851);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000AC30D, setTheEnvironment_runModeExtendedCode851);
 				break;
 				case m_setTheEnvironment_productBuildVersion:
 				setTheEnvironment_productBuildVersionExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000AC48E);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000C9EEA);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x0003B973, setTheEnvironment_productBuildVersionExtendedCode851);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x0003B973, setTheEnvironment_productBuildVersionExtendedCode851);
 				break;
 				case m_setTheProductVersion:
 				setTheRunModeTheProductVersionExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000A9D77);
@@ -5678,24 +5803,24 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				theEnvironmentCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000AA2AA);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000C9EEA);
 
-				if (!extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x0003B93D, setTheProductVersionExtendedCode851)) {
-					callLingoAlertAntivirus(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Extend Code");
+				if (!extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x0003B93D, setTheProductVersionExtendedCode851)) {
+					callLingoAlertAntivirus(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Extend Code");
 					return false;
 				}
 
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000AC4E3, setTheEnvironment_productVersionExtendedCode851);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000AC4E3, setTheEnvironment_productVersionExtendedCode851);
 				break;
 				case m_setTheEnvironment_osVersion:
 				setTheEnvironment_platformTheEnvironment_osVersionExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000AC2AA);
 				setThePlatformTheEnvironment_osVersionExtendedCodeSubroutineAddress = createExtendedCodeAddress(moduleHandle, 0x000A2B88);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000C9EEA);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x0001BA60, setTheEnvironment_osVersionExtendedCode851);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x0001BA60, setTheEnvironment_osVersionExtendedCode851);
 				break;
 				case m_setTheMachineType:
 				setTheMachineTypeExternalParamCountExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000C7574);
 				setTheMachineTypeExtendedCodeSubroutineAddress = createExtendedCodeAddress(moduleHandle, 0x0001BA34);
 				lingoCallCompareAddress2 = createExtendedCodeAddress(moduleHandle, 0x000CA2F5);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000A888C, setTheMachineTypeExtendedCode851);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000A888C, setTheMachineTypeExtendedCode851);
 				break;
 				case m_setExternalParam:
 				setExternalParamNameExternalParamValueExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000C74A2);
@@ -5708,33 +5833,33 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				setExternalParamExtendedCodeSubroutineAddress3 = createExtendedCodeAddress(moduleHandle, 0x000A291E);
 				setExternalParamExtendedCodeSubroutineAddress4 = createExtendedCodeAddress(moduleHandle, 0x000B8B46);
 
-				if (!extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000A8F8F, setExternalParamNameExtendedCode851)) {
-					callLingoAlertAntivirus(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Extend Code");
+				if (!extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000A8F8F, setExternalParamNameExtendedCode851)) {
+					callLingoAlertAntivirus(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Extend Code");
 					return false;
 				}
 
-				if (!extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000A909E, setExternalParamValueExtendedCode851)) {
-					callLingoAlertAntivirus(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Extend Code");
+				if (!extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000A909E, setExternalParamValueExtendedCode851)) {
+					callLingoAlertAntivirus(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Extend Code");
 					return false;
 				}
 
 				// we have to update the count of External Params too
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000A8F35, setExternalParamCountExtendedCode851);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000A8F35, setExternalParamCountExtendedCode851);
 				break;
 				case m_forceTheExitLock:
 				forceTheExitLockExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x00011579 - 0x00000010);
 
-				if (!extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000116A1, forceTheExitLockExtendedCode851)) {
-					callLingoAlertAntivirus(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Extend Code");
+				if (!extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000116A1, forceTheExitLockExtendedCode851)) {
+					callLingoAlertAntivirus(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Extend Code");
 					return false;
 				}
 
-				if (!extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000084A5, forceTheExitLockExtendedCode23851)) {
-					callLingoAlertAntivirus(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Extend Code");
+				if (!extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000084A5, forceTheExitLockExtendedCode23851)) {
+					callLingoAlertAntivirus(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Extend Code");
 					return false;
 				}
 
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x0000A4E8, forceTheExitLockExtendedCode23851);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x0000A4E8, forceTheExitLockExtendedCode23851);
 				break;
 				case m_forceTheSafePlayer:
 				forceTheSafePlayerExtendedCodeSubroutineAddress = createExtendedCodeAddress(moduleHandle, 0x0000C4EE);
@@ -5742,9 +5867,9 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				forceTheSafePlayerExtendedCodeSubroutineAddress3 = createExtendedCodeAddress(moduleHandle, 0x0002CD70);
 				forceTheSafePlayerExtendedCodeSubroutineAddress4 = createExtendedCodeAddress(moduleHandle, 0x000A2BEE);
 				forceTheSafePlayerExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x0001CB56);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x0001CB24, forceTheSafePlayerExtendedCode851);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x0001CB24, forceTheSafePlayerExtendedCode851);
 
-				if (!setLingoSafePlayer(pMoaMmValueInterface, pMoaDrMovieInterface, theSafePlayer)) {
+				if (!setLingoSafePlayer(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, theSafePlayer)) {
 					return false;
 				}
 			}
@@ -5756,26 +5881,26 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				setThePathNameExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000CD11A);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000BE3CA);
 				lingoCallCompareAddress2 = createExtendedCodeAddress(moduleHandle, 0x000BE7D5);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x0000D191, setTheMoviePathExtendedCode9);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x0000D191, setTheMoviePathExtendedCode9);
 				break;
 				case m_setTheMovieName:
 				setTheMovieNameExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000CDDD5);
 				setTheMovieExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000CD0DF);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000BE3CA);
 				lingoCallCompareAddress2 = createExtendedCodeAddress(moduleHandle, 0x000BE7D5);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x0000D096, setTheMovieNameExtendedCode9);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x0000D096, setTheMovieNameExtendedCode9);
 				break;
 				case m_setTheEnvironment_shockMachine:
 				setTheEnvironment_shockMachineExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x000D09EA);
 				theEnvironmentCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000CEA64);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000BE3CA);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000D09DE, setTheEnvironment_shockMachineExtendedCode9);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000D09DE, setTheEnvironment_shockMachineExtendedCode9);
 				break;
 				case m_setTheEnvironment_shockMachineVersion:
 				setTheEnvironment_shockMachineVersionExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x000D0A3D);
 				theEnvironmentCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000CEA64);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000BE3CA);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000D0A33, setTheEnvironment_shockMachineVersionExtendedCode9);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000D0A33, setTheEnvironment_shockMachineVersionExtendedCode9);
 				break;
 				case m_setThePlatform:
 				setThePlatformExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000CE4D3);
@@ -5783,7 +5908,7 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				setThePlatformTheEnvironment_osVersionExtendedCodeSubroutineAddress = createExtendedCodeAddress(moduleHandle, 0x000A2B08);
 				setThePlatformExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x0001BA48);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000BE3CA);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x0001BA3F, setThePlatformExtendedCode9);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x0001BA3F, setThePlatformExtendedCode9);
 				break;
 				case m_setTheRunMode:
 				setTheRunModeTheProductVersionExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000CE531);
@@ -5791,17 +5916,17 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				theEnvironmentCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000CEA64);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000BE3CA);
 
-				if (!extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x0003B8E8, setTheRunModeExtendedCode9)) {
-					callLingoAlertAntivirus(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Extend Code");
+				if (!extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x0003B8E8, setTheRunModeExtendedCode9)) {
+					callLingoAlertAntivirus(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Extend Code");
 					return false;
 				}
 
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000D0ADD, setTheEnvironment_runModeExtendedCode9);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000D0ADD, setTheEnvironment_runModeExtendedCode9);
 				break;
 				case m_setTheEnvironment_productBuildVersion:
 				setTheEnvironment_productBuildVersionExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000D0C5E);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000BE3CA);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x0003B982, setTheEnvironment_productBuildVersionExtendedCode9);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x0003B982, setTheEnvironment_productBuildVersionExtendedCode9);
 				break;
 				case m_setTheProductVersion:
 				setTheRunModeTheProductVersionExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000CE531);
@@ -5809,24 +5934,24 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				theEnvironmentCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000CEA64);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000BE3CA);
 
-				if (!extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x0003B94C, setTheProductVersionExtendedCode9)) {
-					callLingoAlertAntivirus(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Extend Code");
+				if (!extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x0003B94C, setTheProductVersionExtendedCode9)) {
+					callLingoAlertAntivirus(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Extend Code");
 					return false;
 				}
 
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000D0CB3, setTheEnvironment_productVersionExtendedCode9);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000D0CB3, setTheEnvironment_productVersionExtendedCode9);
 				break;
 				case m_setTheEnvironment_osVersion:
 				setTheEnvironment_platformTheEnvironment_osVersionExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000D0A7A);
 				setThePlatformTheEnvironment_osVersionExtendedCodeSubroutineAddress = createExtendedCodeAddress(moduleHandle, 0x000A2B08);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000BE3CA);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x0001BA4E, setTheEnvironment_osVersionExtendedCode9);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x0001BA4E, setTheEnvironment_osVersionExtendedCode9);
 				break;
 				case m_setTheMachineType:
 				setTheMachineTypeExternalParamCountExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000BBA54);
 				setTheMachineTypeExtendedCodeSubroutineAddress = createExtendedCodeAddress(moduleHandle, 0x0001BA22);
 				lingoCallCompareAddress2 = createExtendedCodeAddress(moduleHandle, 0x000BE7D5);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000CD046, setTheMachineTypeExtendedCode9);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000CD046, setTheMachineTypeExtendedCode9);
 				break;
 				case m_setExternalParam:
 				setExternalParamNameExternalParamValueExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000BB982);
@@ -5839,33 +5964,33 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				setExternalParamExtendedCodeSubroutineAddress3 = createExtendedCodeAddress(moduleHandle, 0x000A289E);
 				setExternalParamExtendedCodeSubroutineAddress4 = createExtendedCodeAddress(moduleHandle, 0x000A90D0);
 
-				if (!extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000CD749, setExternalParamNameExtendedCode9)) {
-					callLingoAlertAntivirus(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Extend Code");
+				if (!extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000CD749, setExternalParamNameExtendedCode9)) {
+					callLingoAlertAntivirus(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Extend Code");
 					return false;
 				}
 
-				if (!extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000CD858, setExternalParamValueExtendedCode9)) {
-					callLingoAlertAntivirus(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Extend Code");
+				if (!extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000CD858, setExternalParamValueExtendedCode9)) {
+					callLingoAlertAntivirus(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Extend Code");
 					return false;
 				}
 
 				// we have to update the count of External Params too
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000CD6EF, setExternalParamCountExtendedCode9);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000CD6EF, setExternalParamCountExtendedCode9);
 				break;
 				case m_forceTheExitLock:
 				forceTheExitLockExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x0001154F);
 
-				if (!extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x00011687, forceTheExitLockExtendedCode9)) {
-					callLingoAlertAntivirus(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Extend Code");
+				if (!extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x00011687, forceTheExitLockExtendedCode9)) {
+					callLingoAlertAntivirus(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Extend Code");
 					return false;
 				}
 
-				if (!extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x0000847A, forceTheExitLockExtendedCode239)) {
-					callLingoAlertAntivirus(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Extend Code");
+				if (!extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x0000847A, forceTheExitLockExtendedCode239)) {
+					callLingoAlertAntivirus(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Extend Code");
 					return false;
 				}
 
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x0000A4BE, forceTheExitLockExtendedCode239);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x0000A4BE, forceTheExitLockExtendedCode239);
 				break;
 				case m_forceTheSafePlayer:
 				forceTheSafePlayerExtendedCodeSubroutineAddress = createExtendedCodeAddress(moduleHandle, 0x0001CAEC);
@@ -5873,9 +5998,9 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				forceTheSafePlayerExtendedCodeSubroutineAddress3 = createExtendedCodeAddress(moduleHandle, 0x0002CD30);
 				forceTheSafePlayerExtendedCodeSubroutineAddress4 = createExtendedCodeAddress(moduleHandle, 0x000A2B6E);
 				forceTheSafePlayerExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x0001CB44);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x0001CB12, forceTheSafePlayerExtendedCode9);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x0001CB12, forceTheSafePlayerExtendedCode9);
 
-				if (!setLingoSafePlayer(pMoaMmValueInterface, pMoaDrMovieInterface, theSafePlayer)) {
+				if (!setLingoSafePlayer(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, theSafePlayer)) {
 					return false;
 				}
 			}
@@ -5888,7 +6013,7 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000D7059);
 				lingoCallCompareAddress2 = createExtendedCodeAddress(moduleHandle, 0x000D7463);
 				lingoCallCompareAddress3 = createExtendedCodeAddress(moduleHandle, 0x000D712F);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x0000D3E9, setTheMoviePathExtendedCode10);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x0000D3E9, setTheMoviePathExtendedCode10);
 				break;
 				case m_setTheMovieName:
 				setTheMovieNameExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000ADFCD);
@@ -5896,21 +6021,21 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000D7059);
 				lingoCallCompareAddress2 = createExtendedCodeAddress(moduleHandle, 0x000D7463);
 				lingoCallCompareAddress3 = createExtendedCodeAddress(moduleHandle, 0x000D712F);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x0000D2F0, setTheMovieNameExtendedCode10);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x0000D2F0, setTheMovieNameExtendedCode10);
 				break;
 				case m_setTheEnvironment_shockMachine:
 				setTheEnvironment_shockMachineExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x000B18E0);
 				theEnvironmentCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000AF1D0);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000D7059);
 				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x000D719A);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000B18D4, setTheEnvironment_shockMachineExtendedCode10);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000B18D4, setTheEnvironment_shockMachineExtendedCode10);
 				break;
 				case m_setTheEnvironment_shockMachineVersion:
 				setTheEnvironment_shockMachineVersionExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x000B1933);
 				theEnvironmentCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000AF1D0);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000D7059);
 				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x000D719A);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000B1929, setTheEnvironment_shockMachineVersionExtendedCode10);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000B1929, setTheEnvironment_shockMachineVersionExtendedCode10);
 				break;
 				case m_setThePlatform:
 				setThePlatformExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000AF32F);
@@ -5919,7 +6044,7 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				setThePlatformExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x0001D6F3);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000D7059);
 				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x000D719A);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x0001D6EA, setThePlatformExtendedCode10);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x0001D6EA, setThePlatformExtendedCode10);
 				break;
 				case m_setTheRunMode:
 				setTheRunModeTheProductVersionExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000AD760);
@@ -5929,18 +6054,18 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				lingoCallCompareAddress3 = createExtendedCodeAddress(moduleHandle, 0x000D712F);
 				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x000D719A);
 
-				if (!extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x0003E1F7, setTheRunModeExtendedCode10)) {
-					callLingoAlertAntivirus(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Extend Code");
+				if (!extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x0003E1F7, setTheRunModeExtendedCode10)) {
+					callLingoAlertAntivirus(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Extend Code");
 					return false;
 				}
 
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000B19D3, setTheEnvironment_runModeExtendedCode10);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000B19D3, setTheEnvironment_runModeExtendedCode10);
 				break;
 				case m_setTheEnvironment_productBuildVersion:
 				setTheEnvironment_productBuildVersionExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000B1B54);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000D7059);
 				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x000D719A);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x0003E2CD, setTheEnvironment_productBuildVersionExtendedCode10);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x0003E2CD, setTheEnvironment_productBuildVersionExtendedCode10);
 				break;
 				case m_setTheProductVersion:
 				setTheRunModeTheProductVersionExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000AD760);
@@ -5950,25 +6075,25 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				lingoCallCompareAddress3 = createExtendedCodeAddress(moduleHandle, 0x000D712F);
 				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x000D719A);
 
-				if (!extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x0003E297, setTheProductVersionExtendedCode10)) {
-					callLingoAlertAntivirus(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Extend Code");
+				if (!extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x0003E297, setTheProductVersionExtendedCode10)) {
+					callLingoAlertAntivirus(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Extend Code");
 					return false;
 				}
 
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000B1BA9, setTheEnvironment_productVersionExtendedCode10);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000B1BA9, setTheEnvironment_productVersionExtendedCode10);
 				break;
 				case m_setTheEnvironment_osVersion:
 				setTheEnvironment_platformTheEnvironment_osVersionExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000B1970);
 				setThePlatformTheEnvironment_osVersionExtendedCodeSubroutineAddress = createExtendedCodeAddress(moduleHandle, 0x000A6374);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000D7059);
 				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x000D719A);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x0001D6F9, setTheEnvironment_osVersionExtendedCode10);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x0001D6F9, setTheEnvironment_osVersionExtendedCode10);
 				break;
 				case m_setTheMachineType:
 				setTheMachineTypeExternalParamCountExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000D472F);
 				setTheMachineTypeExtendedCodeSubroutineAddress = createExtendedCodeAddress(moduleHandle, 0x0001D6C1);
 				lingoCallCompareAddress2 = createExtendedCodeAddress(moduleHandle, 0x000D7463);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000B2DB9, setTheMachineTypeExtendedCode10);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000B2DB9, setTheMachineTypeExtendedCode10);
 				break;
 				case m_setExternalParam:
 				setExternalParamNameExternalParamValueExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000D465D);
@@ -5981,33 +6106,33 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				setExternalParamExtendedCodeSubroutineAddress3 = createExtendedCodeAddress(moduleHandle, 0x000B34C6);
 				setExternalParamExtendedCodeSubroutineAddress4 = createExtendedCodeAddress(moduleHandle, 0x000A60FE);
 
-				if (!extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000B3477, setExternalParamNameExtendedCode10)) {
-					callLingoAlertAntivirus(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Extend Code");
+				if (!extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000B3477, setExternalParamNameExtendedCode10)) {
+					callLingoAlertAntivirus(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Extend Code");
 					return false;
 				}
 
-				if (!extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000B3586, setExternalParamValueExtendedCode10)) {
-					callLingoAlertAntivirus(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Extend Code");
+				if (!extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000B3586, setExternalParamValueExtendedCode10)) {
+					callLingoAlertAntivirus(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Extend Code");
 					return false;
 				}
 
 				// we have to update the count of External Params too
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000B263E, setExternalParamCountExtendedCode10);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000B263E, setExternalParamCountExtendedCode10);
 				break;
 				case m_forceTheExitLock:
 				forceTheExitLockExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x00013D34);
 
-				if (!extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x00013E66, forceTheExitLockExtendedCode10)) {
-					callLingoAlertAntivirus(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Extend Code");
+				if (!extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x00013E66, forceTheExitLockExtendedCode10)) {
+					callLingoAlertAntivirus(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Extend Code");
 					return false;
 				}
 
-				if (!extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000084BD, forceTheExitLockExtendedCode2310)) {
-					callLingoAlertAntivirus(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Extend Code");
+				if (!extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000084BD, forceTheExitLockExtendedCode2310)) {
+					callLingoAlertAntivirus(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Extend Code");
 					return false;
 				}
 
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x0000A629, forceTheExitLockExtendedCode2310);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x0000A629, forceTheExitLockExtendedCode2310);
 				break;
 				case m_forceTheSafePlayer:
 				forceTheSafePlayerExtendedCodeSubroutineAddress = createExtendedCodeAddress(moduleHandle, 0x0000C736);
@@ -6015,9 +6140,9 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				forceTheSafePlayerExtendedCodeSubroutineAddress3 = createExtendedCodeAddress(moduleHandle, 0x0002F2DA);
 				forceTheSafePlayerExtendedCodeSubroutineAddress4 = createExtendedCodeAddress(moduleHandle, 0x000A63DA);
 				forceTheSafePlayerExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x0001E868);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x0001E836, forceTheSafePlayerExtendedCode10);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x0001E836, forceTheSafePlayerExtendedCode10);
 
-				if (!setLingoSafePlayer(pMoaMmValueInterface, pMoaDrMovieInterface, theSafePlayer)) {
+				if (!setLingoSafePlayer(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, theSafePlayer)) {
 					return false;
 				}
 			}
@@ -6030,7 +6155,7 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000D8449);
 				lingoCallCompareAddress2 = createExtendedCodeAddress(moduleHandle, 0x000D8853);
 				lingoCallCompareAddress3 = createExtendedCodeAddress(moduleHandle, 0x000D851F);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x0000D4B4, setTheMoviePathExtendedCode101);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x0000D4B4, setTheMoviePathExtendedCode101);
 				break;
 				case m_setTheMovieName:
 				setTheMovieNameExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000AF2F6);
@@ -6038,21 +6163,21 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000D8449);
 				lingoCallCompareAddress2 = createExtendedCodeAddress(moduleHandle, 0x000D8853);
 				lingoCallCompareAddress3 = createExtendedCodeAddress(moduleHandle, 0x000D851F);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x0000D3BB, setTheMovieNameExtendedCode101);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x0000D3BB, setTheMovieNameExtendedCode101);
 				break;
 				case m_setTheEnvironment_shockMachine:
 				setTheEnvironment_shockMachineExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x000B2C33);
 				theEnvironmentCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000B0534);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000D8449);
 				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x000D858A);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000B2C27, setTheEnvironment_shockMachineExtendedCode101);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000B2C27, setTheEnvironment_shockMachineExtendedCode101);
 				break;
 				case m_setTheEnvironment_shockMachineVersion:
 				setTheEnvironment_shockMachineVersionExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x000B2C86);
 				theEnvironmentCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000B0534);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000D8449);
 				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x000D858A);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000B2C7C, setTheEnvironment_shockMachineVersionExtendedCode101);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000B2C7C, setTheEnvironment_shockMachineVersionExtendedCode101);
 				break;
 				case m_setThePlatform:
 				setThePlatformExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000B06A3 - 0x00000010);
@@ -6061,7 +6186,7 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				setThePlatformExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x0001DB0B);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000D8449);
 				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x000D858A);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x0001DB02, setThePlatformExtendedCode101);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x0001DB02, setThePlatformExtendedCode101);
 				break;
 				case m_setTheRunMode:
 				setTheRunModeTheProductVersionExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000AEA87);
@@ -6071,18 +6196,18 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				lingoCallCompareAddress3 = createExtendedCodeAddress(moduleHandle, 0x000D851F);
 				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x000D858A);
 
-				if (!extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x0003E846, setTheRunModeExtendedCode101)) {
-					callLingoAlertAntivirus(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Extend Code");
+				if (!extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x0003E846, setTheRunModeExtendedCode101)) {
+					callLingoAlertAntivirus(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Extend Code");
 					return false;
 				}
 
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000B2D26, setTheEnvironment_runModeExtendedCode101);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000B2D26, setTheEnvironment_runModeExtendedCode101);
 				break;
 				case m_setTheEnvironment_productBuildVersion:
 				setTheEnvironment_productBuildVersionExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000B2EA7);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000D8449);
 				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x000D858A);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x0003E91C, setTheEnvironment_productBuildVersionExtendedCode101);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x0003E91C, setTheEnvironment_productBuildVersionExtendedCode101);
 				break;
 				case m_setTheProductVersion:
 				setTheRunModeTheProductVersionExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000AEA87);
@@ -6092,25 +6217,25 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				lingoCallCompareAddress3 = createExtendedCodeAddress(moduleHandle, 0x000D851F);
 				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x000D858A);
 
-				if (!extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x0003E8E6, setTheProductVersionExtendedCode101)) {
-					callLingoAlertAntivirus(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Extend Code");
+				if (!extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x0003E8E6, setTheProductVersionExtendedCode101)) {
+					callLingoAlertAntivirus(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Extend Code");
 					return false;
 				}
 
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000B2EFC, setTheEnvironment_productVersionExtendedCode101);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000B2EFC, setTheEnvironment_productVersionExtendedCode101);
 				break;
 				case m_setTheEnvironment_osVersion:
 				setTheEnvironment_platformTheEnvironment_osVersionExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000B2CC3);
 				setThePlatformTheEnvironment_osVersionExtendedCodeSubroutineAddress = createExtendedCodeAddress(moduleHandle, 0x000A777A);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000D8449);
 				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x000D858A);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x0001DB11, setTheEnvironment_osVersionExtendedCode101);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x0001DB11, setTheEnvironment_osVersionExtendedCode101);
 				break;
 				case m_setTheMachineType:
 				setTheMachineTypeExternalParamCountExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000D5B1F);
 				setTheMachineTypeExtendedCodeSubroutineAddress = createExtendedCodeAddress(moduleHandle, 0x0001DAD9);
 				lingoCallCompareAddress2 = createExtendedCodeAddress(moduleHandle, 0x000D8853);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000B412B, setTheMachineTypeExtendedCode101);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000B412B, setTheMachineTypeExtendedCode101);
 				break;
 				case m_setExternalParam:
 				setExternalParamNameExternalParamValueExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000D5A4D);
@@ -6123,33 +6248,33 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				setExternalParamExtendedCodeSubroutineAddress3 = createExtendedCodeAddress(moduleHandle, 0x000A74FE);
 				setExternalParamExtendedCodeSubroutineAddress4 = createExtendedCodeAddress(moduleHandle, 0x000C70D4);
 
-				if (!extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000B47E9, setExternalParamNameExtendedCode101)) {
-					callLingoAlertAntivirus(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Extend Code");
+				if (!extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000B47E9, setExternalParamNameExtendedCode101)) {
+					callLingoAlertAntivirus(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Extend Code");
 					return false;
 				}
 
-				if (!extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000B48F8, setExternalParamValueExtendedCode101)) {
-					callLingoAlertAntivirus(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Extend Code");
+				if (!extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000B48F8, setExternalParamValueExtendedCode101)) {
+					callLingoAlertAntivirus(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Extend Code");
 					return false;
 				}
 
 				// we have to update the count of External Params too
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000B39B0, setExternalParamCountExtendedCode101);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000B39B0, setExternalParamCountExtendedCode101);
 				break;
 				case m_forceTheExitLock:
 				forceTheExitLockExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x00013DFF);
 
-				if (!extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x00013F31, forceTheExitLockExtendedCode101)) {
-					callLingoAlertAntivirus(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Extend Code");
+				if (!extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x00013F31, forceTheExitLockExtendedCode101)) {
+					callLingoAlertAntivirus(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Extend Code");
 					return false;
 				}
 
-				if (!extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x00008504, forceTheExitLockExtendedCode23101)) {
-					callLingoAlertAntivirus(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Extend Code");
+				if (!extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x00008504, forceTheExitLockExtendedCode23101)) {
+					callLingoAlertAntivirus(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Extend Code");
 					return false;
 				}
 
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x0000A68C, forceTheExitLockExtendedCode23101);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x0000A68C, forceTheExitLockExtendedCode23101);
 				break;
 				case m_forceTheSafePlayer:
 				forceTheSafePlayerExtendedCodeSubroutineAddress = createExtendedCodeAddress(moduleHandle, 0x0000C801);
@@ -6157,9 +6282,9 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				forceTheSafePlayerExtendedCodeSubroutineAddress3 = createExtendedCodeAddress(moduleHandle, 0x0002F7C1);
 				forceTheSafePlayerExtendedCodeSubroutineAddress4 = createExtendedCodeAddress(moduleHandle, 0x000A77E0);
 				forceTheSafePlayerExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x0001EC76);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x0001EC4E, forceTheSafePlayerExtendedCode101);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x0001EC4E, forceTheSafePlayerExtendedCode101);
 
-				if (!setLingoSafePlayer(pMoaMmValueInterface, pMoaDrMovieInterface, theSafePlayer)) {
+				if (!setLingoSafePlayer(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, theSafePlayer)) {
 					return false;
 				}
 			}
@@ -6172,7 +6297,7 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000D87F9);
 				lingoCallCompareAddress2 = createExtendedCodeAddress(moduleHandle, 0x000D8C03);
 				lingoCallCompareAddress3 = createExtendedCodeAddress(moduleHandle, 0x000D88CF);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x0000D4DC, setTheMoviePathExtendedCode1011);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x0000D4DC, setTheMoviePathExtendedCode1011);
 				break;
 				case m_setTheMovieName:
 				setTheMovieNameExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000AF6ED);
@@ -6180,21 +6305,21 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000D87F9);
 				lingoCallCompareAddress2 = createExtendedCodeAddress(moduleHandle, 0x000D8C03);
 				lingoCallCompareAddress3 = createExtendedCodeAddress(moduleHandle, 0x000D88CF);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x0000D3E3, setTheMovieNameExtendedCode1011);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x0000D3E3, setTheMovieNameExtendedCode1011);
 				break;
 				case m_setTheEnvironment_shockMachine:
 				setTheEnvironment_shockMachineExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x000B303F);
 				theEnvironmentCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000B092B);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000D87F9);
 				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x000D893A);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000B3033, setTheEnvironment_shockMachineExtendedCode1011);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000B3033, setTheEnvironment_shockMachineExtendedCode1011);
 				break;
 				case m_setTheEnvironment_shockMachineVersion:
 				setTheEnvironment_shockMachineVersionExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x000B3092);
 				theEnvironmentCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000B092B);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000D87F9);
 				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x000D893A);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000B3088, setTheEnvironment_shockMachineVersionExtendedCode1011);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000B3088, setTheEnvironment_shockMachineVersionExtendedCode1011);
 				break;
 				case m_setThePlatform:
 				setThePlatformExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000B0A8A);
@@ -6203,7 +6328,7 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				setThePlatformExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x0001DB58);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000D87F9);
 				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x000D893A);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x0001DB4F, setThePlatformExtendedCode1011);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x0001DB4F, setThePlatformExtendedCode1011);
 				break;
 				case m_setTheRunMode:
 				setTheRunModeTheProductVersionExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000AEE7E);
@@ -6213,18 +6338,18 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				lingoCallCompareAddress3 = createExtendedCodeAddress(moduleHandle, 0x000D88CF);
 				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x000D893A);
 
-				if (!extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x0003E8F8, setTheRunModeExtendedCode1011)) {
-					callLingoAlertAntivirus(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Extend Code");
+				if (!extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x0003E8F8, setTheRunModeExtendedCode1011)) {
+					callLingoAlertAntivirus(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Extend Code");
 					return false;
 				}
 
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000B3132, setTheEnvironment_runModeExtendedCode1011);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000B3132, setTheEnvironment_runModeExtendedCode1011);
 				break;
 				case m_setTheEnvironment_productBuildVersion:
 				setTheEnvironment_productBuildVersionExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000B32B3);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000D87F9);
 				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x000D893A);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x0003E9CE, setTheEnvironment_productBuildVersionExtendedCode1011);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x0003E9CE, setTheEnvironment_productBuildVersionExtendedCode1011);
 				break;
 				case m_setTheProductVersion:
 				setTheRunModeTheProductVersionExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000AEE7E);
@@ -6234,25 +6359,25 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				lingoCallCompareAddress3 = createExtendedCodeAddress(moduleHandle, 0x000D88CF);
 				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x000D893A);
 
-				if (!extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x0003E998, setTheProductVersionExtendedCode1011)) {
-					callLingoAlertAntivirus(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Extend Code");
+				if (!extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x0003E998, setTheProductVersionExtendedCode1011)) {
+					callLingoAlertAntivirus(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Extend Code");
 					return false;
 				}
 
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000B3308, setTheEnvironment_productVersionExtendedCode1011);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000B3308, setTheEnvironment_productVersionExtendedCode1011);
 				break;
 				case m_setTheEnvironment_osVersion:
 				setTheEnvironment_platformTheEnvironment_osVersionExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000B30CF);
 				setThePlatformTheEnvironment_osVersionExtendedCodeSubroutineAddress = createExtendedCodeAddress(moduleHandle, 0x000A7B7A);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000D87F9);
 				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x000D893A);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x0001DB64, setTheEnvironment_osVersionExtendedCode1011);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x0001DB64, setTheEnvironment_osVersionExtendedCode1011);
 				break;
 				case m_setTheMachineType:
 				setTheMachineTypeExternalParamCountExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000D5ECF);
 				setTheMachineTypeExtendedCodeSubroutineAddress = createExtendedCodeAddress(moduleHandle, 0x0001DB26);
 				lingoCallCompareAddress2 = createExtendedCodeAddress(moduleHandle, 0x000D8C03);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000B4522, setTheMachineTypeExtendedCode1011);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000B4522, setTheMachineTypeExtendedCode1011);
 				break;
 				case m_setExternalParam:
 				setExternalParamNameExternalParamValueExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000D5DFD);
@@ -6265,33 +6390,33 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				setExternalParamExtendedCodeSubroutineAddress3 = createExtendedCodeAddress(moduleHandle, 0x000A78FE);
 				setExternalParamExtendedCodeSubroutineAddress4 = createExtendedCodeAddress(moduleHandle, 0x000C74CA);
 
-				if (!extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000B4BE0, setExternalParamNameExtendedCode1011)) {
-					callLingoAlertAntivirus(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Extend Code");
+				if (!extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000B4BE0, setExternalParamNameExtendedCode1011)) {
+					callLingoAlertAntivirus(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Extend Code");
 					return false;
 				}
 
-				if (!extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000B4CEF, setExternalParamValueExtendedCode1011)) {
-					callLingoAlertAntivirus(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Extend Code");
+				if (!extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000B4CEF, setExternalParamValueExtendedCode1011)) {
+					callLingoAlertAntivirus(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Extend Code");
 					return false;
 				}
 
 				// we have to update the count of External Params too
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000B3DA7, setExternalParamCountExtendedCode1011);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000B3DA7, setExternalParamCountExtendedCode1011);
 				break;
 				case m_forceTheExitLock:
 				forceTheExitLockExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x00013F5F);
 
-				if (!extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x00013F59, forceTheExitLockExtendedCode1011)) {
-					callLingoAlertAntivirus(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Extend Code");
+				if (!extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x00013F59, forceTheExitLockExtendedCode1011)) {
+					callLingoAlertAntivirus(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Extend Code");
 					return false;
 				}
 
-				if (!extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x00008517, forceTheExitLockExtendedCode231011)) {
-					callLingoAlertAntivirus(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Extend Code");
+				if (!extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x00008517, forceTheExitLockExtendedCode231011)) {
+					callLingoAlertAntivirus(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Extend Code");
 					return false;
 				}
 
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x0000A6B4, forceTheExitLockExtendedCode231011);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x0000A6B4, forceTheExitLockExtendedCode231011);
 				break;
 				case m_forceTheSafePlayer:
 				forceTheSafePlayerExtendedCodeSubroutineAddress = createExtendedCodeAddress(moduleHandle, 0x0000C829);
@@ -6299,9 +6424,9 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				forceTheSafePlayerExtendedCodeSubroutineAddress3 = createExtendedCodeAddress(moduleHandle, 0x0002F83B);
 				forceTheSafePlayerExtendedCodeSubroutineAddress4 = createExtendedCodeAddress(moduleHandle, 0x000A7BE0);
 				forceTheSafePlayerExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x0001ECC3);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x0001EC9B, forceTheSafePlayerExtendedCode1011);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x0001EC9B, forceTheSafePlayerExtendedCode1011);
 
-				if (!setLingoSafePlayer(pMoaMmValueInterface, pMoaDrMovieInterface, theSafePlayer)) {
+				if (!setLingoSafePlayer(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, theSafePlayer)) {
 					return false;
 				}
 			}
@@ -6314,7 +6439,7 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x001103ED);
 				lingoCallCompareAddress2 = createExtendedCodeAddress(moduleHandle, 0x00110805);
 				lingoCallCompareAddress3 = createExtendedCodeAddress(moduleHandle, 0x001104BB);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x00010979, setTheMoviePathExtendedCode11);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x00010979, setTheMoviePathExtendedCode11);
 				break;
 				case m_setTheMovieName:
 				setTheMovieNameExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000DCDB7);
@@ -6322,21 +6447,21 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x001103ED);
 				lingoCallCompareAddress2 = createExtendedCodeAddress(moduleHandle, 0x00110805);
 				lingoCallCompareAddress3 = createExtendedCodeAddress(moduleHandle, 0x001104BB);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000108AB, setTheMovieNameExtendedCode11);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000108AB, setTheMovieNameExtendedCode11);
 				break;
 				case m_setTheEnvironment_shockMachine:
 				setTheEnvironment_shockMachineExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x000D9C0A);
 				theEnvironmentCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000DA83A);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x001103ED);
 				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x00110522);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000D9C03, setTheEnvironment_shockMachineExtendedCode11);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000D9C03, setTheEnvironment_shockMachineExtendedCode11);
 				break;
 				case m_setTheEnvironment_shockMachineVersion:
 				setTheEnvironment_shockMachineVersionExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x000D9C4C);
 				theEnvironmentCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000DA83A);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x001103ED);
 				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x00110522);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000D9C44, setTheEnvironment_shockMachineVersionExtendedCode11);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000D9C44, setTheEnvironment_shockMachineVersionExtendedCode11);
 				break;
 				case m_setThePlatform:
 				setThePlatformExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000DE75D);
@@ -6345,7 +6470,7 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				setThePlatformExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x0002578D);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x001103ED);
 				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x00110522);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x00025786, setThePlatformExtendedCode11);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x00025786, setThePlatformExtendedCode11);
 				break;
 				case m_setTheRunMode:
 				setTheRunModeTheProductVersionExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000DBC62);
@@ -6355,18 +6480,18 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				lingoCallCompareAddress3 = createExtendedCodeAddress(moduleHandle, 0x001104BB);
 				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x00110522);
 
-				if (!extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x0005562D, setTheRunModeExtendedCode11)) {
-					callLingoAlertAntivirus(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Extend Code");
+				if (!extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x0005562D, setTheRunModeExtendedCode11)) {
+					callLingoAlertAntivirus(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Extend Code");
 					return false;
 				}
 
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000D9CE4, setTheEnvironment_runModeExtendedCode11);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000D9CE4, setTheEnvironment_runModeExtendedCode11);
 				break;
 				case m_setTheEnvironment_productBuildVersion:
 				setTheEnvironment_productBuildVersionExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000D9E78);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x001103ED);
 				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x00110522);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x0005576E, setTheEnvironment_productBuildVersionExtendedCode11);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x0005576E, setTheEnvironment_productBuildVersionExtendedCode11);
 				break;
 				case m_setTheProductVersion:
 				setTheRunModeTheProductVersionExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000DBC62);
@@ -6376,25 +6501,25 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				lingoCallCompareAddress3 = createExtendedCodeAddress(moduleHandle, 0x001104BB);
 				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x00110522);
 
-				if (!extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x00055724, setTheProductVersionExtendedCode11)) {
-					callLingoAlertAntivirus(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Extend Code");
+				if (!extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x00055724, setTheProductVersionExtendedCode11)) {
+					callLingoAlertAntivirus(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Extend Code");
 					return false;
 				}
 
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000D9ECA, setTheEnvironment_productVersionExtendedCode11);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000D9ECA, setTheEnvironment_productVersionExtendedCode11);
 				break;
 				case m_setTheEnvironment_osVersion:
 				setTheEnvironment_platformTheEnvironment_osVersionExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000D9C8A);
 				setThePlatformTheEnvironment_osVersionExtendedCodeSubroutineAddress = createExtendedCodeAddress(moduleHandle, 0x000CE022);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x001103ED);
 				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x00110522);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x00025798, setTheEnvironment_osVersionExtendedCode11);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x00025798, setTheEnvironment_osVersionExtendedCode11);
 				break;
 				case m_setTheMachineType:
 				setTheMachineTypeExternalParamCountExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x0010DCAD);
 				setTheMachineTypeExtendedCodeSubroutineAddress = createExtendedCodeAddress(moduleHandle, 0x00025750);
 				lingoCallCompareAddress2 = createExtendedCodeAddress(moduleHandle, 0x00110805);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000DF9A0, setTheMachineTypeExtendedCode11);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000DF9A0, setTheMachineTypeExtendedCode11);
 				break;
 				case m_setExternalParam:
 				setExternalParamNameExternalParamValueExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x0010DBF4);
@@ -6407,33 +6532,33 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				setExternalParamExtendedCodeSubroutineAddress3 = createExtendedCodeAddress(moduleHandle, 0x000CDDB2);
 				setExternalParamExtendedCodeSubroutineAddress4 = createExtendedCodeAddress(moduleHandle, 0x000F9AB0);
 
-				if (!extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000E0468, setExternalParamNameExtendedCode11)) {
-					callLingoAlertAntivirus(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Extend Code");
+				if (!extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000E0468, setExternalParamNameExtendedCode11)) {
+					callLingoAlertAntivirus(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Extend Code");
 					return false;
 				}
 
-				if (!extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000E04D8, setExternalParamValueExtendedCode11)) {
-					callLingoAlertAntivirus(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Extend Code");
+				if (!extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000E04D8, setExternalParamValueExtendedCode11)) {
+					callLingoAlertAntivirus(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Extend Code");
 					return false;
 				}
 
 				// we have to update the count of External Params too
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000E0305, setExternalParamCountExtendedCode11);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000E0305, setExternalParamCountExtendedCode11);
 				break;
 				case m_forceTheExitLock:
 				forceTheExitLockExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x00018C6D);
 
-				if (!extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000187F8, forceTheExitLockExtendedCode11)) {
-					callLingoAlertAntivirus(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Extend Code");
+				if (!extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000187F8, forceTheExitLockExtendedCode11)) {
+					callLingoAlertAntivirus(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Extend Code");
 					return false;
 				}
 
-				if (!extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000098D0, forceTheExitLockExtendedCode2311)) {
-					callLingoAlertAntivirus(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Extend Code");
+				if (!extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000098D0, forceTheExitLockExtendedCode2311)) {
+					callLingoAlertAntivirus(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Extend Code");
 					return false;
 				}
 
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x0000D1A0, forceTheExitLockExtendedCode2311);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x0000D1A0, forceTheExitLockExtendedCode2311);
 				break;
 				case m_forceTheSafePlayer:
 				forceTheSafePlayerExtendedCodeSubroutineAddress = createExtendedCodeAddress(moduleHandle, 0x0000FC70);
@@ -6441,9 +6566,9 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				forceTheSafePlayerExtendedCodeSubroutineAddress3 = createExtendedCodeAddress(moduleHandle, 0x0003C7F0);
 				forceTheSafePlayerExtendedCodeSubroutineAddress4 = createExtendedCodeAddress(moduleHandle, 0x000CE088);
 				forceTheSafePlayerExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x00026E08);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x00026DD0, forceTheSafePlayerExtendedCode11);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x00026DD0, forceTheSafePlayerExtendedCode11);
 
-				if (!setLingoSafePlayer(pMoaMmValueInterface, pMoaDrMovieInterface, theSafePlayer)) {
+				if (!setLingoSafePlayer(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, theSafePlayer)) {
 					return false;
 				}
 			}
@@ -6456,7 +6581,7 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x0011037D);
 				lingoCallCompareAddress2 = createExtendedCodeAddress(moduleHandle, 0x00110795);
 				lingoCallCompareAddress3 = createExtendedCodeAddress(moduleHandle, 0x0011044B);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000109A9, setTheMoviePathExtendedCode1103);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000109A9, setTheMoviePathExtendedCode1103);
 				break;
 				case m_setTheMovieName:
 				setTheMovieNameExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000DCD47);
@@ -6464,21 +6589,21 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x0011037D);
 				lingoCallCompareAddress2 = createExtendedCodeAddress(moduleHandle, 0x00110795);
 				lingoCallCompareAddress3 = createExtendedCodeAddress(moduleHandle, 0x0011044B);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000108DB, setTheMovieNameExtendedCode1103);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000108DB, setTheMovieNameExtendedCode1103);
 				break;
 				case m_setTheEnvironment_shockMachine:
 				setTheEnvironment_shockMachineExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x000D9B9A);
 				theEnvironmentCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000DA7CA);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x0011037D);
 				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x001104B2);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000D9B93, setTheEnvironment_shockMachineExtendedCode1103);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000D9B93, setTheEnvironment_shockMachineExtendedCode1103);
 				break;
 				case m_setTheEnvironment_shockMachineVersion:
 				setTheEnvironment_shockMachineVersionExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x000D9BDC);
 				theEnvironmentCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000DA7CA);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x0011037D);
 				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x001104B2);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000D9BD4, setTheEnvironment_shockMachineVersionExtendedCode1103);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000D9BD4, setTheEnvironment_shockMachineVersionExtendedCode1103);
 				break;
 				case m_setThePlatform:
 				setThePlatformExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000DE6ED);
@@ -6487,7 +6612,7 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				setThePlatformExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x000257BD);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x0011037D);
 				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x001104B2);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000257B6, setThePlatformExtendedCode1103);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000257B6, setThePlatformExtendedCode1103);
 				break;
 				case m_setTheRunMode:
 				setTheRunModeTheProductVersionExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000DBBF2);
@@ -6497,18 +6622,18 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				lingoCallCompareAddress3 = createExtendedCodeAddress(moduleHandle, 0x0011044B);
 				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x001104B2);
 
-				if (!extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000554DD, setTheRunModeExtendedCode1103)) {
-					callLingoAlertAntivirus(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Extend Code");
+				if (!extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000554DD, setTheRunModeExtendedCode1103)) {
+					callLingoAlertAntivirus(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Extend Code");
 					return false;
 				}
 
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000D9C74, setTheEnvironment_runModeExtendedCode1103);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000D9C74, setTheEnvironment_runModeExtendedCode1103);
 				break;
 				case m_setTheEnvironment_productBuildVersion:
 				setTheEnvironment_productBuildVersionExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000D9E08);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x0011037D);
 				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x001104B2);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x0005561E, setTheEnvironment_productBuildVersionExtendedCode1103);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x0005561E, setTheEnvironment_productBuildVersionExtendedCode1103);
 				break;
 				case m_setTheProductVersion:
 				setTheRunModeTheProductVersionExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000DBBF2);
@@ -6518,25 +6643,25 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				lingoCallCompareAddress3 = createExtendedCodeAddress(moduleHandle, 0x0011044B);
 				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x001104B2);
 
-				if (!extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000555D4, setTheProductVersionExtendedCode1103)) {
-					callLingoAlertAntivirus(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Extend Code");
+				if (!extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000555D4, setTheProductVersionExtendedCode1103)) {
+					callLingoAlertAntivirus(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Extend Code");
 					return false;
 				}
 
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000D9E5A, setTheEnvironment_productVersionExtendedCode1103);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000D9E5A, setTheEnvironment_productVersionExtendedCode1103);
 				break;
 				case m_setTheEnvironment_osVersion:
 				setTheEnvironment_platformTheEnvironment_osVersionExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000D9C1A);
 				setThePlatformTheEnvironment_osVersionExtendedCodeSubroutineAddress = createExtendedCodeAddress(moduleHandle, 0x000CDFB2);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x0011037D);
 				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x001104B2);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000257C8, setTheEnvironment_osVersionExtendedCode1103);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000257C8, setTheEnvironment_osVersionExtendedCode1103);
 				break;
 				case m_setTheMachineType:
 				setTheMachineTypeExternalParamCountExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x0010DC3D);
 				setTheMachineTypeExtendedCodeSubroutineAddress = createExtendedCodeAddress(moduleHandle, 0x00025780);
 				lingoCallCompareAddress2 = createExtendedCodeAddress(moduleHandle, 0x00110795);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000DF930, setTheMachineTypeExtendedCode1103);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000DF930, setTheMachineTypeExtendedCode1103);
 				break;
 				case m_setExternalParam:
 				setExternalParamNameExternalParamValueExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x0010DB84);
@@ -6549,33 +6674,33 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				setExternalParamExtendedCodeSubroutineAddress3 = createExtendedCodeAddress(moduleHandle, 0x000CDD42);
 				setExternalParamExtendedCodeSubroutineAddress4 = createExtendedCodeAddress(moduleHandle, 0x000F9A40);
 
-				if (!extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000E03F8, setExternalParamNameExtendedCode1103)) {
-					callLingoAlertAntivirus(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Extend Code");
+				if (!extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000E03F8, setExternalParamNameExtendedCode1103)) {
+					callLingoAlertAntivirus(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Extend Code");
 					return false;
 				}
 
-				if (!extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000E0468, setExternalParamValueExtendedCode1103)) {
-					callLingoAlertAntivirus(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Extend Code");
+				if (!extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000E0468, setExternalParamValueExtendedCode1103)) {
+					callLingoAlertAntivirus(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Extend Code");
 					return false;
 				}
 
 				// we have to update the count of External Params too
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000E0295, setExternalParamCountExtendedCode1103);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000E0295, setExternalParamCountExtendedCode1103);
 				break;
 				case m_forceTheExitLock:
 				forceTheExitLockExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x00018C9D);
 
-				if (!extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x00018828, forceTheExitLockExtendedCode1103)) {
-					callLingoAlertAntivirus(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Extend Code");
+				if (!extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x00018828, forceTheExitLockExtendedCode1103)) {
+					callLingoAlertAntivirus(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Extend Code");
 					return false;
 				}
 
-				if (!extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000098D0, forceTheExitLockExtendedCode231103)) {
-					callLingoAlertAntivirus(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Extend Code");
+				if (!extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000098D0, forceTheExitLockExtendedCode231103)) {
+					callLingoAlertAntivirus(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Extend Code");
 					return false;
 				}
 
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x0000D1D0, forceTheExitLockExtendedCode231103);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x0000D1D0, forceTheExitLockExtendedCode231103);
 				break;
 				case m_forceTheSafePlayer:
 				forceTheSafePlayerExtendedCodeSubroutineAddress = createExtendedCodeAddress(moduleHandle, 0x0000FCA0);
@@ -6583,9 +6708,9 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				forceTheSafePlayerExtendedCodeSubroutineAddress3 = createExtendedCodeAddress(moduleHandle, 0x0003C680);
 				forceTheSafePlayerExtendedCodeSubroutineAddress4 = createExtendedCodeAddress(moduleHandle, 0x000CE018);
 				forceTheSafePlayerExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x00026E38);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x00026E00, forceTheSafePlayerExtendedCode1103);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x00026E00, forceTheSafePlayerExtendedCode1103);
 
-				if (!setLingoSafePlayer(pMoaMmValueInterface, pMoaDrMovieInterface, theSafePlayer)) {
+				if (!setLingoSafePlayer(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, theSafePlayer)) {
 					return false;
 				}
 			}
@@ -6598,7 +6723,7 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x00112FDD);
 				lingoCallCompareAddress2 = createExtendedCodeAddress(moduleHandle, 0x001133F5);
 				lingoCallCompareAddress3 = createExtendedCodeAddress(moduleHandle, 0x001130AB);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x00010B19, setTheMoviePathExtendedCode115);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x00010B19, setTheMoviePathExtendedCode115);
 				break;
 				case m_setTheMovieName:
 				setTheMovieNameExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000DEEF7);
@@ -6606,21 +6731,21 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x00112FDD);
 				lingoCallCompareAddress2 = createExtendedCodeAddress(moduleHandle, 0x001133F5);
 				lingoCallCompareAddress3 = createExtendedCodeAddress(moduleHandle, 0x001130AB);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x00010A4B, setTheMovieNameExtendedCode115);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x00010A4B, setTheMovieNameExtendedCode115);
 				break;
 				case m_setTheEnvironment_shockMachine:
 				setTheEnvironment_shockMachineExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x000DBD4A);
 				theEnvironmentCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000DC97A);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x00112FDD);
 				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x00113112);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000DBD43, setTheEnvironment_shockMachineExtendedCode115);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000DBD43, setTheEnvironment_shockMachineExtendedCode115);
 				break;
 				case m_setTheEnvironment_shockMachineVersion:
 				setTheEnvironment_shockMachineVersionExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x000DBD8C);
 				theEnvironmentCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000DC97A);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x00112FDD);
 				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x00113112);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000DBD84, setTheEnvironment_shockMachineVersionExtendedCode115);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000DBD84, setTheEnvironment_shockMachineVersionExtendedCode115);
 				break;
 				case m_setThePlatform:
 				setThePlatformExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000E089D);
@@ -6629,7 +6754,7 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				setThePlatformExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x000259ED);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x00112FDD);
 				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x00113112);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000259E6, setThePlatformExtendedCode115);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000259E6, setThePlatformExtendedCode115);
 				break;
 				case m_setTheRunMode:
 				setTheRunModeTheProductVersionExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000DDDA2);
@@ -6639,18 +6764,18 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				lingoCallCompareAddress3 = createExtendedCodeAddress(moduleHandle, 0x001130AB);
 				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x00113112);
 
-				if (!extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x0005729D, setTheRunModeExtendedCode115)) {
-					callLingoAlertAntivirus(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Extend Code");
+				if (!extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x0005729D, setTheRunModeExtendedCode115)) {
+					callLingoAlertAntivirus(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Extend Code");
 					return false;
 				}
 
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000DBE24, setTheEnvironment_runModeExtendedCode115);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000DBE24, setTheEnvironment_runModeExtendedCode115);
 				break;
 				case m_setTheEnvironment_productBuildVersion:
 				setTheEnvironment_productBuildVersionExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000DBFB8);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x00112FDD);
 				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x00113112);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000573DE, setTheEnvironment_productBuildVersionExtendedCode115);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000573DE, setTheEnvironment_productBuildVersionExtendedCode115);
 				break;
 				case m_setTheProductVersion:
 				setTheRunModeTheProductVersionExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000DDDA2);
@@ -6660,25 +6785,25 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				lingoCallCompareAddress3 = createExtendedCodeAddress(moduleHandle, 0x001130AB);
 				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x00113112);
 
-				if (!extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x00057394, setTheProductVersionExtendedCode115)) {
-					callLingoAlertAntivirus(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Extend Code");
+				if (!extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x00057394, setTheProductVersionExtendedCode115)) {
+					callLingoAlertAntivirus(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Extend Code");
 					return false;
 				}
 
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000DC00A, setTheEnvironment_productVersionExtendedCode115);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000DC00A, setTheEnvironment_productVersionExtendedCode115);
 				break;
 				case m_setTheEnvironment_osVersion:
 				setTheEnvironment_platformTheEnvironment_osVersionExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000DBDCA);
 				setThePlatformTheEnvironment_osVersionExtendedCodeSubroutineAddress = createExtendedCodeAddress(moduleHandle, 0x000CE7FE);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x00112FDD);
 				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x00113112);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000259F8, setTheEnvironment_osVersionExtendedCode115);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000259F8, setTheEnvironment_osVersionExtendedCode115);
 				break;
 				case m_setTheMachineType:
 				setTheMachineTypeExternalParamCountExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x0011089D);
 				setTheMachineTypeExtendedCodeSubroutineAddress = createExtendedCodeAddress(moduleHandle, 0x000259B0);
 				lingoCallCompareAddress2 = createExtendedCodeAddress(moduleHandle, 0x001133F5);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000E1AE0, setTheMachineTypeExtendedCode115);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000E1AE0, setTheMachineTypeExtendedCode115);
 				break;
 				case m_setExternalParam:
 				setExternalParamNameExternalParamValueExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x001107E4);
@@ -6691,33 +6816,33 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				setExternalParamExtendedCodeSubroutineAddress3 = createExtendedCodeAddress(moduleHandle, 0x000CE582);
 				setExternalParamExtendedCodeSubroutineAddress4 = createExtendedCodeAddress(moduleHandle, 0x000FC410);
 
-				if (!extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000E25A8, setExternalParamNameExtendedCode115)) {
-					callLingoAlertAntivirus(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Extend Code");
+				if (!extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000E25A8, setExternalParamNameExtendedCode115)) {
+					callLingoAlertAntivirus(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Extend Code");
 					return false;
 				}
 
-				if (!extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000E2618, setExternalParamValueExtendedCode115)) {
-					callLingoAlertAntivirus(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Extend Code");
+				if (!extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000E2618, setExternalParamValueExtendedCode115)) {
+					callLingoAlertAntivirus(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Extend Code");
 					return false;
 				}
 
 				// we have to update the count of External Params too
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000E2445, setExternalParamCountExtendedCode115);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000E2445, setExternalParamCountExtendedCode115);
 				break;
 				case m_forceTheExitLock:
 				forceTheExitLockExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x00018E5D);
 
-				if (!extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000189E2, forceTheExitLockExtendedCode115)) {
-					callLingoAlertAntivirus(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Extend Code");
+				if (!extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000189E2, forceTheExitLockExtendedCode115)) {
+					callLingoAlertAntivirus(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Extend Code");
 					return false;
 				}
 
-				if (!extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000098B0, forceTheExitLockExtendedCode23115)) {
-					callLingoAlertAntivirus(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Extend Code");
+				if (!extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000098B0, forceTheExitLockExtendedCode23115)) {
+					callLingoAlertAntivirus(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Extend Code");
 					return false;
 				}
 
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x0000D270, forceTheExitLockExtendedCode23115);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x0000D270, forceTheExitLockExtendedCode23115);
 				break;
 				case m_forceTheSafePlayer:
 				forceTheSafePlayerExtendedCodeSubroutineAddress = createExtendedCodeAddress(moduleHandle, 0x0000FE10);
@@ -6725,9 +6850,9 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				forceTheSafePlayerExtendedCodeSubroutineAddress3 = createExtendedCodeAddress(moduleHandle, 0x0003D450);
 				forceTheSafePlayerExtendedCodeSubroutineAddress4 = createExtendedCodeAddress(moduleHandle, 0x000CE864);
 				forceTheSafePlayerExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x00027098);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x00027060, forceTheSafePlayerExtendedCode115);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x00027060, forceTheSafePlayerExtendedCode115);
 
-				if (!setLingoSafePlayer(pMoaMmValueInterface, pMoaDrMovieInterface, theSafePlayer)) {
+				if (!setLingoSafePlayer(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, theSafePlayer)) {
 					return false;
 				}
 			}
@@ -6740,7 +6865,7 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x00113BA7);
 				lingoCallCompareAddress2 = createExtendedCodeAddress(moduleHandle, 0x00113FC5);
 				lingoCallCompareAddress3 = createExtendedCodeAddress(moduleHandle, 0x00113C75);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x00010E19, setTheMoviePathExtendedCode1158);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x00010E19, setTheMoviePathExtendedCode1158);
 				break;
 				case m_setTheMovieName:
 				setTheMovieNameExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000DF977);
@@ -6748,21 +6873,21 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x00113BA7);
 				lingoCallCompareAddress2 = createExtendedCodeAddress(moduleHandle, 0x00113FC5);
 				lingoCallCompareAddress3 = createExtendedCodeAddress(moduleHandle, 0x00113C75);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x00010D4B, setTheMovieNameExtendedCode1158);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x00010D4B, setTheMovieNameExtendedCode1158);
 				break;
 				case m_setTheEnvironment_shockMachine:
 				setTheEnvironment_shockMachineExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x000DC7CA);
 				theEnvironmentCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000DD3FA);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x00113BA7);
 				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x00113CDC);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000DC7C3, setTheEnvironment_shockMachineExtendedCode1158);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000DC7C3, setTheEnvironment_shockMachineExtendedCode1158);
 				break;
 				case m_setTheEnvironment_shockMachineVersion:
 				setTheEnvironment_shockMachineVersionExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x000DC80C);
 				theEnvironmentCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000DD3FA);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x00113BA7);
 				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x00113CDC);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000DC804, setTheEnvironment_shockMachineVersionExtendedCode1158);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000DC804, setTheEnvironment_shockMachineVersionExtendedCode1158);
 				break;
 				case m_setThePlatform:
 				setThePlatformExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000E140D);
@@ -6770,7 +6895,7 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				setThePlatformTheEnvironment_osVersionExtendedCodeSubroutineAddress = createExtendedCodeAddress(moduleHandle, 0x000CF27E);
 				setThePlatformExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x00025DCD);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x00113BA7);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x00025DC6, setThePlatformExtendedCode1158);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x00025DC6, setThePlatformExtendedCode1158);
 				break;
 				case m_setTheRunMode:
 				setTheRunModeTheProductVersionExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000DE822);
@@ -6780,18 +6905,18 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				lingoCallCompareAddress3 = createExtendedCodeAddress(moduleHandle, 0x00113C75);
 				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x00113CDC);
 
-				if (!extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x0005793D, setTheRunModeExtendedCode1158)) {
-					callLingoAlertAntivirus(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Extend Code");
+				if (!extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x0005793D, setTheRunModeExtendedCode1158)) {
+					callLingoAlertAntivirus(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Extend Code");
 					return false;
 				}
 
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000DC8A4, setTheEnvironment_runModeExtendedCode1158);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000DC8A4, setTheEnvironment_runModeExtendedCode1158);
 				break;
 				case m_setTheEnvironment_productBuildVersion:
 				setTheEnvironment_productBuildVersionExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000DCA38);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x00113BA7);
 				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x00113CDC);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x00057A7E, setTheEnvironment_productBuildVersionExtendedCode1158);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x00057A7E, setTheEnvironment_productBuildVersionExtendedCode1158);
 				break;
 				case m_setTheProductVersion:
 				setTheRunModeTheProductVersionExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000DE822);
@@ -6801,25 +6926,25 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				lingoCallCompareAddress3 = createExtendedCodeAddress(moduleHandle, 0x00113C75);
 				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x00113CDC);
 
-				if (!extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x00057A34, setTheProductVersionExtendedCode1158)) {
-					callLingoAlertAntivirus(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Extend Code");
+				if (!extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x00057A34, setTheProductVersionExtendedCode1158)) {
+					callLingoAlertAntivirus(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Extend Code");
 					return false;
 				}
 
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000DCA8A, setTheEnvironment_productVersionExtendedCode1158);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000DCA8A, setTheEnvironment_productVersionExtendedCode1158);
 				break;
 				case m_setTheEnvironment_osVersion:
 				setTheEnvironment_platformTheEnvironment_osVersionExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000DC84A);
 				setThePlatformTheEnvironment_osVersionExtendedCodeSubroutineAddress = createExtendedCodeAddress(moduleHandle, 0x000CF27E);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x00113BA7);
 				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x00113CDC);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x00025DD8, setTheEnvironment_osVersionExtendedCode1158);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x00025DD8, setTheEnvironment_osVersionExtendedCode1158);
 				break;
 				case m_setTheMachineType:
 				setTheMachineTypeExternalParamCountExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x001113DD);
 				setTheMachineTypeExtendedCodeSubroutineAddress = createExtendedCodeAddress(moduleHandle, 0x00025D90);
 				lingoCallCompareAddress2 = createExtendedCodeAddress(moduleHandle, 0x00113FC5);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000E2650, setTheMachineTypeExtendedCode1158);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000E2650, setTheMachineTypeExtendedCode1158);
 				break;
 				case m_setExternalParam:
 				setExternalParamNameExternalParamValueExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x00111324);
@@ -6832,33 +6957,33 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				setExternalParamExtendedCodeSubroutineAddress3 = createExtendedCodeAddress(moduleHandle, 0x000CF002);
 				setExternalParamExtendedCodeSubroutineAddress4 = createExtendedCodeAddress(moduleHandle, 0x000FE0B0);
 
-				if (!extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000E3118, setExternalParamNameExtendedCode1158)) {
-					callLingoAlertAntivirus(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Extend Code");
+				if (!extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000E3118, setExternalParamNameExtendedCode1158)) {
+					callLingoAlertAntivirus(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Extend Code");
 					return false;
 				}
 
-				if (!extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000E3188, setExternalParamValueExtendedCode1158)) {
-					callLingoAlertAntivirus(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Extend Code");
+				if (!extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000E3188, setExternalParamValueExtendedCode1158)) {
+					callLingoAlertAntivirus(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Extend Code");
 					return false;
 				}
 
 				// we have to update the count of External Params too
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000E2FB5, setExternalParamCountExtendedCode1158);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000E2FB5, setExternalParamCountExtendedCode1158);
 				break;
 				case m_forceTheExitLock:
 				forceTheExitLockExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x000191FD);
 
-				if (!extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x00018D88, forceTheExitLockExtendedCode1158)) {
-					callLingoAlertAntivirus(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Extend Code");
+				if (!extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x00018D88, forceTheExitLockExtendedCode1158)) {
+					callLingoAlertAntivirus(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Extend Code");
 					return false;
 				}
 
-				if (!extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000099D0, forceTheExitLockExtendedCode231158)) {
-					callLingoAlertAntivirus(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Extend Code");
+				if (!extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000099D0, forceTheExitLockExtendedCode231158)) {
+					callLingoAlertAntivirus(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Extend Code");
 					return false;
 				}
 
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x0000D570, forceTheExitLockExtendedCode231158);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x0000D570, forceTheExitLockExtendedCode231158);
 				break;
 				case m_forceTheSafePlayer:
 				forceTheSafePlayerExtendedCodeSubroutineAddress = createExtendedCodeAddress(moduleHandle, 0x00010110);
@@ -6866,9 +6991,9 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				forceTheSafePlayerExtendedCodeSubroutineAddress3 = createExtendedCodeAddress(moduleHandle, 0x0003DAF0);
 				forceTheSafePlayerExtendedCodeSubroutineAddress4 = createExtendedCodeAddress(moduleHandle, 0x000CF2E4);
 				forceTheSafePlayerExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x00027478);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x00027440, forceTheSafePlayerExtendedCode1158);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x00027440, forceTheSafePlayerExtendedCode1158);
 
-				if (!setLingoSafePlayer(pMoaMmValueInterface, pMoaDrMovieInterface, theSafePlayer)) {
+				if (!setLingoSafePlayer(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, theSafePlayer)) {
 					return false;
 				}
 			}
@@ -6881,7 +7006,7 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x001161ED);
 				lingoCallCompareAddress2 = createExtendedCodeAddress(moduleHandle, 0x00116616);
 				lingoCallCompareAddress3 = createExtendedCodeAddress(moduleHandle, 0x001162BB);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x00010FB9, setTheMoviePathExtendedCode1159);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x00010FB9, setTheMoviePathExtendedCode1159);
 				break;
 				case m_setTheMovieName:
 				setTheMovieNameExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000E0B27);
@@ -6889,21 +7014,21 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x001161ED);
 				lingoCallCompareAddress2 = createExtendedCodeAddress(moduleHandle, 0x00116616);
 				lingoCallCompareAddress3 = createExtendedCodeAddress(moduleHandle, 0x001162BB);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x00010EEB, setTheMovieNameExtendedCode1159);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x00010EEB, setTheMovieNameExtendedCode1159);
 				break;
 				case m_setTheEnvironment_shockMachine:
 				setTheEnvironment_shockMachineExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x000DD84A);
 				theEnvironmentCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000DE47A);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x001161ED);
 				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x00116322);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000DD843, setTheEnvironment_shockMachineExtendedCode1159);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000DD843, setTheEnvironment_shockMachineExtendedCode1159);
 				break;
 				case m_setTheEnvironment_shockMachineVersion:
 				setTheEnvironment_shockMachineVersionExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x000DD88C);
 				theEnvironmentCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000DE47A);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x001161ED);
 				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x00116322);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000DD884, setTheEnvironment_shockMachineVersionExtendedCode1159);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000DD884, setTheEnvironment_shockMachineVersionExtendedCode1159);
 				break;
 				case m_setThePlatform:
 				setThePlatformExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000E25BD);
@@ -6912,7 +7037,7 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				setThePlatformExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x0002601D);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x001161ED);
 				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x00116322);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x00026016, setThePlatformExtendedCode1159);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x00026016, setThePlatformExtendedCode1159);
 				break;
 				case m_setTheRunMode:
 				setTheRunModeTheProductVersionExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000DF9D2);
@@ -6922,18 +7047,18 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				lingoCallCompareAddress3 = createExtendedCodeAddress(moduleHandle, 0x001162BB);
 				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x00116322);
 
-				if (!extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x00057D6D, setTheRunModeExtendedCode1159)) {
-					callLingoAlertAntivirus(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Extend Code");
+				if (!extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x00057D6D, setTheRunModeExtendedCode1159)) {
+					callLingoAlertAntivirus(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Extend Code");
 					return false;
 				}
 
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000DD924, setTheEnvironment_runModeExtendedCode1159);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000DD924, setTheEnvironment_runModeExtendedCode1159);
 				break;
 				case m_setTheEnvironment_productBuildVersion:
 				setTheEnvironment_productBuildVersionExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000DDAB8);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x001161ED);
 				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x00116322);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x00057EAE, setTheEnvironment_productBuildVersionExtendedCode1159);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x00057EAE, setTheEnvironment_productBuildVersionExtendedCode1159);
 				break;
 				case m_setTheProductVersion:
 				setTheRunModeTheProductVersionExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000DF9D2);
@@ -6943,25 +7068,25 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				lingoCallCompareAddress3 = createExtendedCodeAddress(moduleHandle, 0x001162BB);
 				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x00116322);
 
-				if (!extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x00057E64, setTheProductVersionExtendedCode1159)) {
-					callLingoAlertAntivirus(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Extend Code");
+				if (!extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x00057E64, setTheProductVersionExtendedCode1159)) {
+					callLingoAlertAntivirus(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Extend Code");
 					return false;
 				}
 
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000DDB0A, setTheEnvironment_productVersionExtendedCode1159);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000DDB0A, setTheEnvironment_productVersionExtendedCode1159);
 				break;
 				case m_setTheEnvironment_osVersion:
 				setTheEnvironment_platformTheEnvironment_osVersionExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000DD8CA);
 				setThePlatformTheEnvironment_osVersionExtendedCodeSubroutineAddress = createExtendedCodeAddress(moduleHandle, 0x000CFFF4);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x001161ED);
 				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x00116322);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x00026028, setTheEnvironment_osVersionExtendedCode1159);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x00026028, setTheEnvironment_osVersionExtendedCode1159);
 				break;
 				case m_setTheMachineType:
 				setTheMachineTypeExternalParamCountExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x001136E2);
 				setTheMachineTypeExtendedCodeSubroutineAddress = createExtendedCodeAddress(moduleHandle, 0x00025FE0);
 				lingoCallCompareAddress2 = createExtendedCodeAddress(moduleHandle, 0x00116616);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000E3810, setTheMachineTypeExtendedCode1159);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000E3810, setTheMachineTypeExtendedCode1159);
 				break;
 				case m_setExternalParam:
 				setExternalParamNameExternalParamValueExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x0011361C);
@@ -6974,33 +7099,33 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				setExternalParamExtendedCodeSubroutineAddress3 = createExtendedCodeAddress(moduleHandle, 0x000CFD72);
 				setExternalParamExtendedCodeSubroutineAddress4 = createExtendedCodeAddress(moduleHandle, 0x000FF9F0);
 
-				if (!extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000E4388, setExternalParamNameExtendedCode1159)) {
-					callLingoAlertAntivirus(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Extend Code");
+				if (!extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000E4388, setExternalParamNameExtendedCode1159)) {
+					callLingoAlertAntivirus(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Extend Code");
 					return false;
 				}
 
-				if (!extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000E43F8, setExternalParamValueExtendedCode1159)) {
-					callLingoAlertAntivirus(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Extend Code");
+				if (!extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000E43F8, setExternalParamValueExtendedCode1159)) {
+					callLingoAlertAntivirus(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Extend Code");
 					return false;
 				}
 
 				// we have to update the count of External Params too
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000E4215 - 0x00000010, setExternalParamCountExtendedCode1159);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000E4215 - 0x00000010, setExternalParamCountExtendedCode1159);
 				break;
 				case m_forceTheExitLock:
 				forceTheExitLockExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x000193AD);
 
-				if (!extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x00018F38, forceTheExitLockExtendedCode1159)) {
-					callLingoAlertAntivirus(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Extend Code");
+				if (!extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x00018F38, forceTheExitLockExtendedCode1159)) {
+					callLingoAlertAntivirus(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Extend Code");
 					return false;
 				}
 
-				if (!extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x00009B20, forceTheExitLockExtendedCode231159)) {
-					callLingoAlertAntivirus(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Extend Code");
+				if (!extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x00009B20, forceTheExitLockExtendedCode231159)) {
+					callLingoAlertAntivirus(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Extend Code");
 					return false;
 				}
 
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x0000D710, forceTheExitLockExtendedCode231159);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x0000D710, forceTheExitLockExtendedCode231159);
 				break;
 				case m_forceTheSafePlayer:
 				forceTheSafePlayerExtendedCodeSubroutineAddress = createExtendedCodeAddress(moduleHandle, 0x000102B0);
@@ -7008,9 +7133,9 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				forceTheSafePlayerExtendedCodeSubroutineAddress3 = createExtendedCodeAddress(moduleHandle, 0x0003DDA0);
 				forceTheSafePlayerExtendedCodeSubroutineAddress4 = createExtendedCodeAddress(moduleHandle, 0x000D005A);
 				forceTheSafePlayerExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x000276C8);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000276A0 - 0x00000010, forceTheSafePlayerExtendedCode1159);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000276A0 - 0x00000010, forceTheSafePlayerExtendedCode1159);
 				
-				if (!setLingoSafePlayer(pMoaMmValueInterface, pMoaDrMovieInterface, theSafePlayer)) {
+				if (!setLingoSafePlayer(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, theSafePlayer)) {
 					return false;
 				}
 			}
@@ -7024,7 +7149,7 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				lingoCallCompareAddress2 = createExtendedCodeAddress(moduleHandle, 0x000367C8);
 				lingoCallCompareAddress3 = createExtendedCodeAddress(moduleHandle, 0x000364BC);
 				exceptionHandlerSubroutineAddress = createExtendedCodeAddress(moduleHandle, 0x00001762);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000621F7, setTheMoviePathExtendedCode12);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000621F7, setTheMoviePathExtendedCode12);
 				break;
 				case m_setTheMovieName:
 				setTheMovieNameExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x00012DA0);
@@ -7033,21 +7158,21 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				lingoCallCompareAddress2 = createExtendedCodeAddress(moduleHandle, 0x000367C8);
 				lingoCallCompareAddress3 = createExtendedCodeAddress(moduleHandle, 0x000364BC);
 				exceptionHandlerSubroutineAddress = createExtendedCodeAddress(moduleHandle, 0x00001762);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x00062104, setTheMovieNameExtendedCode12);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x00062104, setTheMovieNameExtendedCode12);
 				break;
 				case m_setTheEnvironment_shockMachine:
 				setTheEnvironment_shockMachineExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x0000FB4B);
 				theEnvironmentCompareAddress = createExtendedCodeAddress(moduleHandle, 0x00010AA5);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000363FC);
 				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x0003651C);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x0000FB42, setTheEnvironment_shockMachineExtendedCode12);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x0000FB42, setTheEnvironment_shockMachineExtendedCode12);
 				break;
 				case m_setTheEnvironment_shockMachineVersion:
 				setTheEnvironment_shockMachineVersionExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x0000FB95);
 				theEnvironmentCompareAddress = createExtendedCodeAddress(moduleHandle, 0x00010AA5);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000363FC);
 				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x0003651C);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x0000FB8E, setTheEnvironment_shockMachineVersionExtendedCode12);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x0000FB8E, setTheEnvironment_shockMachineVersionExtendedCode12);
 				break;
 				case m_setThePlatform:
 				setThePlatformExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000146A7);
@@ -7056,7 +7181,7 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				setThePlatformExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x0007AC1E);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000363FC);
 				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x0003651C);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x0007AC17, setThePlatformExtendedCode12);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x0007AC17, setThePlatformExtendedCode12);
 				break;
 				case m_setTheRunMode:
 				setTheRunModeTheProductVersionExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000121B9);
@@ -7067,19 +7192,19 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x0003651C);
 				exceptionHandlerSubroutineAddress = createExtendedCodeAddress(moduleHandle, 0x00001762);
 
-				if (!extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000A3153, setTheRunModeExtendedCode12)) {
-					callLingoAlertAntivirus(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Extend Code");
+				if (!extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000A3153, setTheRunModeExtendedCode12)) {
+					callLingoAlertAntivirus(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Extend Code");
 					return false;
 				}
 
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x0000FC46, setTheEnvironment_runModeExtendedCode12);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x0000FC46, setTheEnvironment_runModeExtendedCode12);
 				break;
 				case m_setTheEnvironment_productBuildVersion:
 				setTheEnvironment_productBuildVersionExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x0000FE22);
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000363FC);
 				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x0003651C);
 				exceptionHandlerSubroutineAddress = createExtendedCodeAddress(moduleHandle, 0x00001762);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000A3232, setTheEnvironment_productBuildVersionExtendedCode12);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000A3232, setTheEnvironment_productBuildVersionExtendedCode12);
 				break;
 				case m_setTheProductVersion:
 				setTheRunModeTheProductVersionExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000121B9);
@@ -7090,12 +7215,12 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x0003651C);
 				exceptionHandlerSubroutineAddress = createExtendedCodeAddress(moduleHandle, 0x00001762);
 
-				if (!extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000A3204, setTheProductVersionExtendedCode12)) {
-					callLingoAlertAntivirus(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Extend Code");
+				if (!extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000A3204, setTheProductVersionExtendedCode12)) {
+					callLingoAlertAntivirus(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Extend Code");
 					return false;
 				}
 
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x0000FE82, setTheEnvironment_productVersionExtendedCode12);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x0000FE82, setTheEnvironment_productVersionExtendedCode12);
 				break;
 				case m_setTheEnvironment_osVersion:
 				setTheEnvironment_platformTheEnvironment_osVersionExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x0000FBDC);
@@ -7103,13 +7228,13 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				lingoCallCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000363FC);
 				lingoCallCompareAddress4 = createExtendedCodeAddress(moduleHandle, 0x0003651C);
 				exceptionHandlerSubroutineAddress = createExtendedCodeAddress(moduleHandle, 0x00001762);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x0007AC22, setTheEnvironment_osVersionExtendedCode12);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x0007AC22, setTheEnvironment_osVersionExtendedCode12);
 				break;
 				case m_setTheMachineType:
 				setTheMachineTypeExternalParamCountExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x00033898);
 				setTheMachineTypeExtendedCodeSubroutineAddress = createExtendedCodeAddress(moduleHandle, 0x0007ABD0);
 				lingoCallCompareAddress2 = createExtendedCodeAddress(moduleHandle, 0x000367C8);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x00018C34, setTheMachineTypeExtendedCode12);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x00018C34, setTheMachineTypeExtendedCode12);
 				break;
 				case m_setExternalParam:
 				setExternalParamNameExternalParamValueExtendedCodeCompareAddress = createExtendedCodeAddress(moduleHandle, 0x000337BC);
@@ -7122,33 +7247,33 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				setExternalParamExtendedCodeSubroutineAddress3 = createExtendedCodeAddress(moduleHandle, 0x001668B2);
 				setExternalParamExtendedCodeSubroutineAddress4 = createExtendedCodeAddress(moduleHandle, 0x00033170);
 
-				if (!extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000198B3, setExternalParamNameExtendedCode12)) {
-					callLingoAlertAntivirus(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Extend Code");
+				if (!extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000198B3, setExternalParamNameExtendedCode12)) {
+					callLingoAlertAntivirus(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Extend Code");
 					return false;
 				}
 
-				if (!extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x00019923, setExternalParamValueExtendedCode12)) {
-					callLingoAlertAntivirus(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Extend Code");
+				if (!extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x00019923, setExternalParamValueExtendedCode12)) {
+					callLingoAlertAntivirus(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Extend Code");
 					return false;
 				}
 
 				// we have to update the count of External Params too
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x00019723, setExternalParamCountExtendedCode12);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x00019723, setExternalParamCountExtendedCode12);
 				break;
 				case m_forceTheExitLock:
 				forceTheExitLockExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x0006EFD8);
 
-				if (!extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x0006EB81, forceTheExitLockExtendedCode12)) {
-					callLingoAlertAntivirus(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Extend Code");
+				if (!extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x0006EB81, forceTheExitLockExtendedCode12)) {
+					callLingoAlertAntivirus(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Extend Code");
 					return false;
 				}
 
-				if (!extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x00009430 - 0x00000010, forceTheExitLockExtendedCode212)) {
-					callLingoAlertAntivirus(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Extend Code");
+				if (!extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x00009430 - 0x00000010, forceTheExitLockExtendedCode212)) {
+					callLingoAlertAntivirus(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Extend Code");
 					return false;
 				}
 
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x0005E590, forceTheExitLockExtendedCode312);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x0005E590, forceTheExitLockExtendedCode312);
 				break;
 				case m_forceTheSafePlayer:
 				forceTheSafePlayerExtendedCodeSubroutineAddress = createExtendedCodeAddress(moduleHandle, 0x00061380);
@@ -7156,9 +7281,9 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 				forceTheSafePlayerExtendedCodeSubroutineAddress3 = createExtendedCodeAddress(moduleHandle, 0x0008F380);
 				forceTheSafePlayerExtendedCodeSubroutineAddress4 = createExtendedCodeAddress(moduleHandle, 0x00166E4C);
 				forceTheSafePlayerExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x0007C1D7);
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x0007C193, forceTheSafePlayerExtendedCode12);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x0007C193, forceTheSafePlayerExtendedCode12);
 
-				if (!setLingoSafePlayer(pMoaMmValueInterface, pMoaDrMovieInterface, theSafePlayer)) {
+				if (!setLingoSafePlayer(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, theSafePlayer)) {
 					return false;
 				}
 			}
@@ -7202,14 +7327,14 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 
 			// NetLingo Xtra Director Version 11.5.9 Test Code is equivalent to NetLingo Xtra Director Version 11.5.8 Test Code
 
-			const size_t NET_LINGO_XTRA_DIRECTOR_VERSION_TESTS_SIZE = 13;
-			ModuleDirectorVersionTest netLingoXtraDirectorVersionTests[NET_LINGO_XTRA_DIRECTOR_VERSION_TESTS_SIZE] = { {0x00002F89, NET_LINGO_XTRA_DIRECTOR_VERSION_8_TEST_CODE_SIZE, netLingoXtraDirectorVersion8TestCode}, {0x0000277A, NET_LINGO_XTRA_DIRECTOR_VERSION_85_TEST_CODE_SIZE, netLingoXtraDirectorVersion85TestCode}, {0x00000000, 0, {}}, {0x0000274B, NET_LINGO_XTRA_DIRECTOR_VERSION_9_TEST_CODE_SIZE, netLingoXtraDirectorVersion9TestCode}, {0x0000277D, NET_LINGO_XTRA_DIRECTOR_VERSION_10_TEST_CODE_SIZE, netLingoXtraDirectorVersion10TestCode}, {0x0000277A, NET_LINGO_XTRA_DIRECTOR_VERSION_101_TEST_CODE_SIZE, netLingoXtraDirectorVersion101TestCode}, {0x00000000, 0, {}}, {0x0000435A, NET_LINGO_XTRA_DIRECTOR_VERSION_11_TEST_CODE_SIZE, netLingoXtraDirectorVersion11TestCode}, {0x0000435A, NET_LINGO_XTRA_DIRECTOR_VERSION_1103_TEST_CODE_SIZE, netLingoXtraDirectorVersion1103TestCode}, {0x000043F6, NET_LINGO_XTRA_DIRECTOR_VERSION_115_TEST_CODE_SIZE, netLingoXtraDirectorVersion115TestCode}, {0x00004397, NET_LINGO_XTRA_DIRECTOR_VERSION_1158_TEST_CODE_SIZE, netLingoXtraDirectorVersion1158TestCode}, {0x00000000, 0, {}}, {0x000046CF, NET_LINGO_XTRA_DIRECTOR_VERSION_12_TEST_CODE_SIZE, netLingoXtraDirectorVersion12TestCode} };
+			const size_t NET_LINGO_XTRA_DIRECTOR_VERSION_TESTS_SIZE = 14;
+			ModuleDirectorVersionTest netLingoXtraDirectorVersionTests[NET_LINGO_XTRA_DIRECTOR_VERSION_TESTS_SIZE] = {{0x00002F89, NET_LINGO_XTRA_DIRECTOR_VERSION_8_TEST_CODE_SIZE, netLingoXtraDirectorVersion8TestCode}, {0x0000277A, NET_LINGO_XTRA_DIRECTOR_VERSION_85_TEST_CODE_SIZE, netLingoXtraDirectorVersion85TestCode}, {0x00000000, 0, {}}, {0x0000274B, NET_LINGO_XTRA_DIRECTOR_VERSION_9_TEST_CODE_SIZE, netLingoXtraDirectorVersion9TestCode}, {0x0000277D, NET_LINGO_XTRA_DIRECTOR_VERSION_10_TEST_CODE_SIZE, netLingoXtraDirectorVersion10TestCode}, {0x0000277A, NET_LINGO_XTRA_DIRECTOR_VERSION_101_TEST_CODE_SIZE, netLingoXtraDirectorVersion101TestCode}, {0x00000000, 0, {}}, {0x0000435A, NET_LINGO_XTRA_DIRECTOR_VERSION_11_TEST_CODE_SIZE, netLingoXtraDirectorVersion11TestCode}, {0x0000435A, NET_LINGO_XTRA_DIRECTOR_VERSION_1103_TEST_CODE_SIZE, netLingoXtraDirectorVersion1103TestCode}, {0x000043F6, NET_LINGO_XTRA_DIRECTOR_VERSION_115_TEST_CODE_SIZE, netLingoXtraDirectorVersion115TestCode}, {0x00004397, NET_LINGO_XTRA_DIRECTOR_VERSION_1158_TEST_CODE_SIZE, netLingoXtraDirectorVersion1158TestCode}, {0x00000000, 0, {}}, {0x00000000, 0, {}}, {0x000046CF, NET_LINGO_XTRA_DIRECTOR_VERSION_12_TEST_CODE_SIZE, netLingoXtraDirectorVersion12TestCode}};
 			
-			netLingoXtraDirectorVersion = getModuleDirectorVersion(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, NET_LINGO_XTRA_DIRECTOR_VERSION_TESTS_SIZE, netLingoXtraDirectorVersionTests);
+			netLingoXtraDirectorVersion = getModuleDirectorVersion(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, NET_LINGO_XTRA_DIRECTOR_VERSION_TESTS_SIZE, netLingoXtraDirectorVersionTests);
 		}
 
 		if (netLingoXtraDirectorVersion == MODULE_DIRECTOR_INCOMPATIBLE) {
-			callLingoAlertIncompatibleDirectorVersion(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Get Module Director Version");
+			callLingoAlertIncompatibleDirectorVersion(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Get Module Director Version");
 			return false;
 		}
 
@@ -7219,82 +7344,82 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 			case MODULE_DIRECTOR_8:
 			switch (methodSelector) {
 				case m_disableGoToNetMovie:
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x00003310, disableGoToNetThingExtendedCode);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x00003310, disableGoToNetThingExtendedCode);
 				break;
 				case m_disableGoToNetPage:
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000033B0, disableGoToNetThingExtendedCode);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000033B0, disableGoToNetThingExtendedCode);
 			}
 			break;
 			case MODULE_DIRECTOR_85:
 			switch (methodSelector) {
 				case m_disableGoToNetMovie:
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x00002AA1, disableGoToNetThingExtendedCode);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x00002AA1, disableGoToNetThingExtendedCode);
 				break;
 				case m_disableGoToNetPage:
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x00002B2D, disableGoToNetThingExtendedCode);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x00002B2D, disableGoToNetThingExtendedCode);
 			}
 			break;
 			case MODULE_DIRECTOR_9:
 			switch (methodSelector) {
 				case m_disableGoToNetMovie:
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x00002A72, disableGoToNetThingExtendedCode);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x00002A72, disableGoToNetThingExtendedCode);
 				break;
 				case m_disableGoToNetPage:
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x00002AFE, disableGoToNetThingExtendedCode);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x00002AFE, disableGoToNetThingExtendedCode);
 			}
 			break;
 			case MODULE_DIRECTOR_10:
 			switch (methodSelector) {
 				case m_disableGoToNetMovie:
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x00002AA4, disableGoToNetThingExtendedCode);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x00002AA4, disableGoToNetThingExtendedCode);
 				break;
 				case m_disableGoToNetPage:
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x00002B30, disableGoToNetThingExtendedCode);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x00002B30, disableGoToNetThingExtendedCode);
 			}
 			break;
 			case MODULE_DIRECTOR_101:
 			switch (methodSelector) {
 				case m_disableGoToNetMovie:
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x00002AA1, disableGoToNetThingExtendedCode);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x00002AA1, disableGoToNetThingExtendedCode);
 				break;
 				case m_disableGoToNetPage:
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x00002B2D, disableGoToNetThingExtendedCode);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x00002B2D, disableGoToNetThingExtendedCode);
 			}
 			break;
 			case MODULE_DIRECTOR_11:
 			switch (methodSelector) {
 				case m_disableGoToNetMovie:
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x0000294F, disableGoToNetThingExtendedCode);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x0000294F, disableGoToNetThingExtendedCode);
 				break;
 				case m_disableGoToNetPage:
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x00003077, disableGoToNetThingExtendedCode);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x00003077, disableGoToNetThingExtendedCode);
 			}
 			break;
 			case MODULE_DIRECTOR_115:
 			switch (methodSelector) {
 				case m_disableGoToNetMovie:
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x00002968, disableGoToNetThingExtendedCode);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x00002968, disableGoToNetThingExtendedCode);
 				break;
 				case m_disableGoToNetPage:
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x00003090, disableGoToNetThingExtendedCode);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x00003090, disableGoToNetThingExtendedCode);
 			}
 			break;
 			case MODULE_DIRECTOR_1158:
 			switch (methodSelector) {
 				case m_disableGoToNetMovie:
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x00002909, disableGoToNetThingExtendedCode);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x00002909, disableGoToNetThingExtendedCode);
 				break;
 				case m_disableGoToNetPage:
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x00003031, disableGoToNetThingExtendedCode);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x00003031, disableGoToNetThingExtendedCode);
 			}
 			break;
 			case MODULE_DIRECTOR_12:
 			switch (methodSelector) {
 				case m_disableGoToNetMovie:
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x00002981, disableGoToNetThingExtendedCode);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x00002981, disableGoToNetThingExtendedCode);
 				break;
 				case m_disableGoToNetPage:
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x0000329B, disableGoToNetThingExtendedCode);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x0000329B, disableGoToNetThingExtendedCode);
 			}
 		}
 		break;
@@ -7331,17 +7456,20 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 			const size_t SHOCKWAVE_3D_ASSET_XTRA_DIRECTOR_VERSION_1159_TEST_CODE_SIZE = 9;
 			unsigned char shockwave3DAssetXtraDirectorVersion1159TestCode[SHOCKWAVE_3D_ASSET_XTRA_DIRECTOR_VERSION_1159_TEST_CODE_SIZE] = {0x49, 0x74, 0x1E, 0x49, 0x74, 0x0F, 0x49, 0x75, 0x21};
 
+			const size_t SHOCKWAVE_3D_ASSET_XTRA_DIRECTOR_VERSION_1165_TEST_CODE_SIZE = 15;
+			unsigned char shockwave3DAssetXtraDirectorVersion1165TestCode[SHOCKWAVE_3D_ASSET_XTRA_DIRECTOR_VERSION_1165_TEST_CODE_SIZE] = {0x83, 0xE9, 0x01, 0x74, 0x22, 0x83, 0xE9, 0x01, 0x74, 0x11, 0x83, 0xE9, 0x01, 0x75, 0x21};
+
 			const size_t SHOCKWAVE_3D_ASSET_XTRA_DIRECTOR_VERSION_12_TEST_CODE_SIZE = 8;
 			unsigned char shockwave3DAssetXtraDirectorVersion12TestCode[SHOCKWAVE_3D_ASSET_XTRA_DIRECTOR_VERSION_12_TEST_CODE_SIZE] = {0x83, 0xFA, 0x03, 0x77, 0x31, 0xFF, 0x24, 0x95};
 
-			const size_t SHOCKWAVE_3D_ASSET_XTRA_DIRECTOR_VERSION_TESTS_SIZE = 13;
-			ModuleDirectorVersionTest shockwave3DAssetXtraDirectorVersionTests[SHOCKWAVE_3D_ASSET_XTRA_DIRECTOR_VERSION_TESTS_SIZE] = {{0x00000000, 0, {}}, {0x00004DD9, SHOCKWAVE_3D_ASSET_XTRA_DIRECTOR_VERSION_85_TEST_CODE_SIZE, shockwave3DAssetXtraDirectorVersion85TestCode}, {0x00004F39, SHOCKWAVE_3D_ASSET_XTRA_DIRECTOR_VERSION_851_TEST_CODE_SIZE, shockwave3DAssetXtraDirectorVersion851TestCode}, {0x00004EB9, SHOCKWAVE_3D_ASSET_XTRA_DIRECTOR_VERSION_9_TEST_CODE_SIZE, shockwave3DAssetXtraDirectorVersion9TestCode}, {0x00008FA9, SHOCKWAVE_3D_ASSET_XTRA_DIRECTOR_VERSION_10_TEST_CODE_SIZE, shockwave3DAssetXtraDirectorVersion10TestCode}, {0x00008F99, SHOCKWAVE_3D_ASSET_XTRA_DIRECTOR_VERSION_101_TEST_CODE_SIZE, shockwave3DAssetXtraDirectorVersion101TestCode}, {0x00000000, 0, {}}, {0x00004609, SHOCKWAVE_3D_ASSET_XTRA_DIRECTOR_VERSION_11_TEST_CODE_SIZE, shockwave3DAssetXtraDirectorVersion11TestCode}, {0x00004619, SHOCKWAVE_3D_ASSET_XTRA_DIRECTOR_VERSION_1103_TEST_CODE_SIZE, shockwave3DAssetXtraDirectorVersion1103TestCode}, {0x000057E9, SHOCKWAVE_3D_ASSET_XTRA_DIRECTOR_VERSION_115_TEST_CODE_SIZE, shockwave3DAssetXtraDirectorVersion115TestCode}, {0x00005829, SHOCKWAVE_3D_ASSET_XTRA_DIRECTOR_VERSION_1158_TEST_CODE_SIZE, shockwave3DAssetXtraDirectorVersion1158TestCode}, {0x00006A09, SHOCKWAVE_3D_ASSET_XTRA_DIRECTOR_VERSION_1159_TEST_CODE_SIZE, shockwave3DAssetXtraDirectorVersion1159TestCode}, {0x000073AC, SHOCKWAVE_3D_ASSET_XTRA_DIRECTOR_VERSION_12_TEST_CODE_SIZE, shockwave3DAssetXtraDirectorVersion12TestCode}};
+			const size_t SHOCKWAVE_3D_ASSET_XTRA_DIRECTOR_VERSION_TESTS_SIZE = 14;
+			ModuleDirectorVersionTest shockwave3DAssetXtraDirectorVersionTests[SHOCKWAVE_3D_ASSET_XTRA_DIRECTOR_VERSION_TESTS_SIZE] = {{0x00000000, 0, {}}, {0x00004DD9, SHOCKWAVE_3D_ASSET_XTRA_DIRECTOR_VERSION_85_TEST_CODE_SIZE, shockwave3DAssetXtraDirectorVersion85TestCode}, {0x00004F39, SHOCKWAVE_3D_ASSET_XTRA_DIRECTOR_VERSION_851_TEST_CODE_SIZE, shockwave3DAssetXtraDirectorVersion851TestCode}, {0x00004EB9, SHOCKWAVE_3D_ASSET_XTRA_DIRECTOR_VERSION_9_TEST_CODE_SIZE, shockwave3DAssetXtraDirectorVersion9TestCode}, {0x00008FA9, SHOCKWAVE_3D_ASSET_XTRA_DIRECTOR_VERSION_10_TEST_CODE_SIZE, shockwave3DAssetXtraDirectorVersion10TestCode}, {0x00008F99, SHOCKWAVE_3D_ASSET_XTRA_DIRECTOR_VERSION_101_TEST_CODE_SIZE, shockwave3DAssetXtraDirectorVersion101TestCode}, {0x00000000, 0, {}}, {0x00004609, SHOCKWAVE_3D_ASSET_XTRA_DIRECTOR_VERSION_11_TEST_CODE_SIZE, shockwave3DAssetXtraDirectorVersion11TestCode}, {0x00004619, SHOCKWAVE_3D_ASSET_XTRA_DIRECTOR_VERSION_1103_TEST_CODE_SIZE, shockwave3DAssetXtraDirectorVersion1103TestCode}, {0x000057E9, SHOCKWAVE_3D_ASSET_XTRA_DIRECTOR_VERSION_115_TEST_CODE_SIZE, shockwave3DAssetXtraDirectorVersion115TestCode}, {0x00005829, SHOCKWAVE_3D_ASSET_XTRA_DIRECTOR_VERSION_1158_TEST_CODE_SIZE, shockwave3DAssetXtraDirectorVersion1158TestCode}, {0x00006A09, SHOCKWAVE_3D_ASSET_XTRA_DIRECTOR_VERSION_1159_TEST_CODE_SIZE, shockwave3DAssetXtraDirectorVersion1159TestCode}, {0x00006DE9, SHOCKWAVE_3D_ASSET_XTRA_DIRECTOR_VERSION_1165_TEST_CODE_SIZE, shockwave3DAssetXtraDirectorVersion1165TestCode}, {0x000073AC, SHOCKWAVE_3D_ASSET_XTRA_DIRECTOR_VERSION_12_TEST_CODE_SIZE, shockwave3DAssetXtraDirectorVersion12TestCode}};
 			
-			shockwave3DAssetXtraDirectorVersion = getModuleDirectorVersion(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, SHOCKWAVE_3D_ASSET_XTRA_DIRECTOR_VERSION_TESTS_SIZE, shockwave3DAssetXtraDirectorVersionTests);
+			shockwave3DAssetXtraDirectorVersion = getModuleDirectorVersion(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, SHOCKWAVE_3D_ASSET_XTRA_DIRECTOR_VERSION_TESTS_SIZE, shockwave3DAssetXtraDirectorVersionTests);
 		}
 
 		if (shockwave3DAssetXtraDirectorVersion == MODULE_DIRECTOR_INCOMPATIBLE) {
-			callLingoAlertIncompatibleDirectorVersion(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Get Module Director Version");
+			callLingoAlertIncompatibleDirectorVersion(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Get Module Director Version");
 			return false;
 		}
 
@@ -7353,12 +7481,12 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 
 			switch (methodSelector) {
 				case m_bugfixShockwave3DBadDriverList:
-				if (!extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000DD5D4, bugfixShockwave3DBadDriverListExtendedCode85)) {
-					callLingoAlertAntivirus(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Extend Code");
+				if (!extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000DD5D4, bugfixShockwave3DBadDriverListExtendedCode85)) {
+					callLingoAlertAntivirus(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Extend Code");
 					return false;
 				}
 
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000DD5E2, bugfixShockwave3DBadDriverListExtendedCode285);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000DD5E2, bugfixShockwave3DBadDriverListExtendedCode285);
 			}
 			break;
 			case MODULE_DIRECTOR_851:
@@ -7367,12 +7495,12 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 
 			switch (methodSelector) {
 				case m_bugfixShockwave3DBadDriverList:
-				if (!extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000DE332, bugfixShockwave3DBadDriverListExtendedCode851)) {
-					callLingoAlertAntivirus(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Extend Code");
+				if (!extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000DE332, bugfixShockwave3DBadDriverListExtendedCode851)) {
+					callLingoAlertAntivirus(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Extend Code");
 					return false;
 				}
 
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000DE340, bugfixShockwave3DBadDriverListExtendedCode2851);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000DE340, bugfixShockwave3DBadDriverListExtendedCode2851);
 			}
 			break;
 			case MODULE_DIRECTOR_9:
@@ -7381,12 +7509,12 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 
 			switch (methodSelector) {
 				case m_bugfixShockwave3DBadDriverList:
-				if (!extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000DAD6F, bugfixShockwave3DBadDriverListExtendedCode9)) {
-					callLingoAlertAntivirus(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Extend Code");
+				if (!extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000DAD6F, bugfixShockwave3DBadDriverListExtendedCode9)) {
+					callLingoAlertAntivirus(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Extend Code");
 					return false;
 				}
 
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000DAD7D, bugfixShockwave3DBadDriverListExtendedCode29);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000DAD7D, bugfixShockwave3DBadDriverListExtendedCode29);
 			}
 			break;
 			case MODULE_DIRECTOR_10:
@@ -7395,12 +7523,12 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 
 			switch (methodSelector) {
 				case m_bugfixShockwave3DBadDriverList:
-				if (!extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000FA165, bugfixShockwave3DBadDriverListExtendedCode10)) {
-					callLingoAlertAntivirus(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Extend Code");
+				if (!extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000FA165, bugfixShockwave3DBadDriverListExtendedCode10)) {
+					callLingoAlertAntivirus(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Extend Code");
 					return false;
 				}
 
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000FA173, bugfixShockwave3DBadDriverListExtendedCode210);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000FA173, bugfixShockwave3DBadDriverListExtendedCode210);
 			}
 			break;
 			case MODULE_DIRECTOR_101:
@@ -7409,12 +7537,12 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 
 			switch (methodSelector) {
 				case m_bugfixShockwave3DBadDriverList:
-				if (!extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000FA3E7, bugfixShockwave3DBadDriverListExtendedCode101)) {
-					callLingoAlertAntivirus(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Extend Code");
+				if (!extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000FA3E7, bugfixShockwave3DBadDriverListExtendedCode101)) {
+					callLingoAlertAntivirus(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Extend Code");
 					return false;
 				}
 
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000FA3F5, bugfixShockwave3DBadDriverListExtendedCode2101);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000FA3F5, bugfixShockwave3DBadDriverListExtendedCode2101);
 			}
 			break;
 			case MODULE_DIRECTOR_11:
@@ -7423,12 +7551,12 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 
 			switch (methodSelector) {
 				case m_bugfixShockwave3DBadDriverList:
-				if (!extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000D3221, bugfixShockwave3DBadDriverListExtendedCode11)) {
-					callLingoAlertAntivirus(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Extend Code");
+				if (!extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000D3221, bugfixShockwave3DBadDriverListExtendedCode11)) {
+					callLingoAlertAntivirus(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Extend Code");
 					return false;
 				}
 
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000D322F, bugfixShockwave3DBadDriverListExtendedCode211);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000D322F, bugfixShockwave3DBadDriverListExtendedCode211);
 			}
 			break;
 			case MODULE_DIRECTOR_1103:
@@ -7437,12 +7565,12 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 
 			switch (methodSelector) {
 				case m_bugfixShockwave3DBadDriverList:
-				if (!extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000D321A, bugfixShockwave3DBadDriverListExtendedCode1103)) {
-					callLingoAlertAntivirus(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Extend Code");
+				if (!extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000D321A, bugfixShockwave3DBadDriverListExtendedCode1103)) {
+					callLingoAlertAntivirus(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Extend Code");
 					return false;
 				}
 
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000D3228, bugfixShockwave3DBadDriverListExtendedCode21103);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000D3228, bugfixShockwave3DBadDriverListExtendedCode21103);
 			}
 			break;
 			case MODULE_DIRECTOR_115:
@@ -7451,12 +7579,12 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 
 			switch (methodSelector) {
 				case m_bugfixShockwave3DBadDriverList:
-				if (!extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000D7AF8, bugfixShockwave3DBadDriverListExtendedCode115)) {
-					callLingoAlertAntivirus(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Extend Code");
+				if (!extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000D7AF8, bugfixShockwave3DBadDriverListExtendedCode115)) {
+					callLingoAlertAntivirus(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Extend Code");
 					return false;
 				}
 
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000D7B06, bugfixShockwave3DBadDriverListExtendedCode2115);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000D7B06, bugfixShockwave3DBadDriverListExtendedCode2115);
 			}
 			break;
 			case MODULE_DIRECTOR_1158:
@@ -7466,13 +7594,13 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 			switch (methodSelector) {
 				case m_bugfixShockwave3DBadDriverList:
 				for (DWORD i = 0;i < 5;i++) {
-					if (!extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000D8936 + i)) {
-						callLingoAlertAntivirus(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Extend Code");
+					if (!extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000D8936 + i)) {
+						callLingoAlertAntivirus(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Extend Code");
 						return false;
 					}
 				}
 
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000D8915, bugfixShockwave3DBadDriverListExtendedCode1158);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000D8915, bugfixShockwave3DBadDriverListExtendedCode1158);
 			}
 			break;
 			case MODULE_DIRECTOR_1159:
@@ -7482,13 +7610,29 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 			switch (methodSelector) {
 				case m_bugfixShockwave3DBadDriverList:
 				for (DWORD i = 0;i < 5;i++) {
-					if (!extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000EB1AF + i)) {
-						callLingoAlertAntivirus(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Extend Code");
+					if (!extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000EB1AF + i)) {
+						callLingoAlertAntivirus(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Extend Code");
 						return false;
 					}
 				}
 
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000EB18E, bugfixShockwave3DBadDriverListExtendedCode1159);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000EB18E, bugfixShockwave3DBadDriverListExtendedCode1159);
+			}
+			break;
+			case MODULE_DIRECTOR_1165:
+			bugfixShockwave3DBadDriverListExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x000F3D03);
+			bugfixShockwave3DBadDriverList2ExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x000F3DB3);
+
+			switch (methodSelector) {
+				case m_bugfixShockwave3DBadDriverList:
+				for (DWORD i = 0; i < 5; i++) {
+					if (!extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000F3D1A + i)) {
+						callLingoAlertAntivirus(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Extend Code");
+						return false;
+					}
+				}
+
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000F3CF9, bugfixShockwave3DBadDriverListExtendedCode1165);
 			}
 			break;
 			case MODULE_DIRECTOR_12:
@@ -7498,20 +7642,20 @@ bool extender(PIMoaMmValue pMoaMmValueInterface, PIMoaDrMovie pMoaDrMovieInterfa
 			switch (methodSelector) {
 				case m_bugfixShockwave3DBadDriverList:
 				for (DWORD i = 0;i < 5;i++) {
-					if (!extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000FF932 + i)) {
-						callLingoAlertAntivirus(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Extend Code");
+					if (!extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000FF932 + i)) {
+						callLingoAlertAntivirus(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Extend Code");
 						return false;
 					}
 				}
 
-				codeExtended = extendCode(pMoaMmValueInterface, pMoaDrMovieInterface, moduleHandle, 0x000FF90E, bugfixShockwave3DBadDriverListExtendedCode12);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000FF90E, bugfixShockwave3DBadDriverListExtendedCode12);
 			}
 		}
 	}
 
 	// in case we failed and didn't catch it somehow
 	if (!codeExtended) {
-		callLingoAlertAntivirus(pMoaMmValueInterface, pMoaDrMovieInterface, "Failed to Extend Code");
+		callLingoAlertAntivirus(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Extend Code");
 		return false;
 	}
 
