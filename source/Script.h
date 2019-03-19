@@ -55,9 +55,9 @@ DEFINE_GUID(CLSID_TStdXtra,
 			0xef754e9f, 0xbe76, 0x42d3, 0xa7, 0xb2, 0x5b, 0xb7, 0x94, 0x7b, 0x58, 0x12);
 
 EXTERN_BEGIN_DEFINE_CLASS_INSTANCE_VARS(TStdXtra)
-	PIMoaMmValue moaMmValueInterfacePointer;
-	PIMoaMmUtils2 moaMmUtilsInterfacePointer;
-	PIMoaDrPlayer moaDrPlayerInterfacePointer;
+	PIMoaMmValue moaMmValueInterfacePointer = NULL;
+	PIMoaMmUtils2 moaMmUtilsInterfacePointer = NULL;
+	PIMoaDrPlayer moaDrPlayerInterfacePointer = NULL;
 EXTERN_END_DEFINE_CLASS_INSTANCE_VARS
 
 EXTERN_BEGIN_DEFINE_CLASS_INTERFACE(TStdXtra, IMoaRegister)

@@ -168,6 +168,8 @@ END_XTRA
 STDMETHODIMP_(MoaError) MoaCreate_TStdXtra(TStdXtra* This) {
 	moa_try
 
+	ThrowNull(This);
+
 	ThrowErr(This->pCallback->QueryInterface(&IID_IMoaMmValue, (PPMoaVoid)&This->moaMmValueInterfacePointer));
 	ThrowErr(This->pCallback->QueryInterface(&IID_IMoaMmUtils2, (PPMoaVoid)&This->moaMmUtilsInterfacePointer));
 	ThrowErr(This->pCallback->QueryInterface(&IID_IMoaDrPlayer, (PPMoaVoid)&This->moaDrPlayerInterfacePointer));
@@ -181,6 +183,8 @@ STDMETHODIMP_(MoaError) MoaCreate_TStdXtra(TStdXtra* This) {
 // interfaces we Queried for from Director before
 STDMETHODIMP_(void) MoaDestroy_TStdXtra(TStdXtra* This) {
 	moa_try
+
+	ThrowNull(This);
 
 	if (This->moaMmValueInterfacePointer) {
 		This->moaMmValueInterfacePointer->Release();
@@ -224,7 +228,10 @@ END_DEFINE_CLASS_INTERFACE
 STDMETHODIMP TStdXtra_IMoaRegister::Register(PIMoaCache pCache, PIMoaXtraEntryDict pXtraDict) {
 	moa_try
 
-	PIMoaRegistryEntryDict pReg;
+	ThrowNull(pCache);
+	ThrowNull(pXtraDict);
+
+	PIMoaRegistryEntryDict pReg = NULL;
 	MoaBool bItsSafe = FALSE;
 
 	const size_t VERSION_STR_SIZE = 256;
@@ -300,6 +307,8 @@ END_DEFINE_CLASS_INTERFACE
 STDMETHODIMP TStdXtra_IMoaMmXScript::Call(PMoaDrCallInfo callPtr) {
 	moa_try
 
+	ThrowNull(callPtr);
+
 	// switch statement with all the handlers that may be called - we arrive here from Lingo first
 	switch (callPtr->methodSelector) {
 		case m_setTheMoviePath:
@@ -368,6 +377,9 @@ STDMETHODIMP TStdXtra_IMoaMmXScript::Call(PMoaDrCallInfo callPtr) {
 MoaError TStdXtra_IMoaMmXScript::XScrpExtender(PMoaDrCallInfo callPtr, MODULE module, PIMoaDrMovie moaDrMovieInterfacePointer) {
 	moa_try
 
+	ThrowNull(callPtr);
+	ThrowNull(moaDrMovieInterfacePointer);
+
 	if (!extender(pObj->moaMmValueInterfacePointer, moaDrMovieInterfacePointer, callPtr->methodSelector, module)) {
 		callLingoQuit(pObj->moaMmValueInterfacePointer, moaDrMovieInterfacePointer);
 		TerminateProcess(GetCurrentProcess(), 0);
@@ -381,8 +393,10 @@ MoaError TStdXtra_IMoaMmXScript::XScrpExtender(PMoaDrCallInfo callPtr, MODULE mo
 MoaError TStdXtra_IMoaMmXScript::XScrpExtender(PMoaDrCallInfo callPtr, MODULE module) {
 	moa_try
 
+	ThrowNull(callPtr);
+
 	// get the Active Movie (so we can call a Lingo Handler in it if we need to)
-	PIMoaDrMovie moaDrMovieInterfacePointer;
+	PIMoaDrMovie moaDrMovieInterfacePointer = NULL;
 	ThrowErr(pObj->moaDrPlayerInterfacePointer->GetActiveMovie(&moaDrMovieInterfacePointer));
 	
 	ThrowErr(XScrpExtender(callPtr, module, moaDrMovieInterfacePointer));
@@ -399,6 +413,9 @@ MoaError TStdXtra_IMoaMmXScript::XScrpExtender(PMoaDrCallInfo callPtr, MODULE mo
 MoaError TStdXtra_IMoaMmXScript::XScrpExtender(PMoaDrCallInfo callPtr, MODULE module, PMoaLong property) {
 	moa_try
 
+	ThrowNull(callPtr);
+	ThrowNull(property);
+
 	MoaMmValue argumentValue = kVoidMoaMmValueInitializer;
 
 	// this is an overload for the same method as the previous but with the PMoaLong type
@@ -414,6 +431,9 @@ MoaError TStdXtra_IMoaMmXScript::XScrpExtender(PMoaDrCallInfo callPtr, MODULE mo
 
 MoaError TStdXtra_IMoaMmXScript::XScrpExtender(PMoaDrCallInfo callPtr, MODULE module, MoaLong propertySize, PMoaChar property) {
 	moa_try
+
+	ThrowNull(callPtr);
+	ThrowNull(property);
 
 	MoaMmValue argumentValue = kVoidMoaMmValueInitializer;
 
@@ -432,8 +452,13 @@ MoaError TStdXtra_IMoaMmXScript::XScrpExtender(PMoaDrCallInfo callPtr, MODULE mo
 
 MoaError TStdXtra_IMoaMmXScript::XScrpSetExternalParam(PMoaDrCallInfo callPtr, MODULE module) {
 	moa_try
+
+	ThrowNull(callPtr);
+
+	size_t externalParamsSizeOld = 0;
+	PMoaChar externalParamsOld = NULL;
 	
-	PIMoaDrMovie moaDrMovieInterfacePointer;
+	PIMoaDrMovie moaDrMovieInterfacePointer = NULL;
 	ThrowErr(pObj->moaDrPlayerInterfacePointer->GetActiveMovie(&moaDrMovieInterfacePointer));
 
 	MoaMmValue argumentValue = kVoidMoaMmValueInitializer;
@@ -449,9 +474,6 @@ MoaError TStdXtra_IMoaMmXScript::XScrpSetExternalParam(PMoaDrCallInfo callPtr, M
 
 	AccessArgByIndex(2, &argumentValue);
 	ThrowErr(pObj->moaMmValueInterfacePointer->ValueToString(&argumentValue, (PMoaChar)value, VALUE_SIZE));
-
-	size_t externalParamsSizeOld = 0;
-	PMoaChar externalParamsOld = NULL;
 
 	// name cannot be empty
 	if (!strlen(name)) {
@@ -495,7 +517,7 @@ MoaError TStdXtra_IMoaMmXScript::XScrpSetExternalParam(PMoaDrCallInfo callPtr, M
 					callLingoAlert(pObj->moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Unset External Param");
 					callLingoQuit(pObj->moaMmValueInterfacePointer, moaDrMovieInterfacePointer);
 					TerminateProcess(GetCurrentProcess(), 0);
-					Throw(kMoaErr_NoErr);
+					Throw(kMoaErr_OutOfMem);
 				}
 				externalParamsSizeOld -= externalParamOldNameSize + externalParamOldValueSize;
 				break;
@@ -518,7 +540,7 @@ MoaError TStdXtra_IMoaMmXScript::XScrpSetExternalParam(PMoaDrCallInfo callPtr, M
 			callLingoAlert(pObj->moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Set External Param Name");
 			callLingoQuit(pObj->moaMmValueInterfacePointer, moaDrMovieInterfacePointer);
 			TerminateProcess(GetCurrentProcess(), 0);
-			Throw(kMoaErr_NoErr);
+			Throw(kMoaErr_OutOfMem);
 		}
 
 		if (strcpy_s(externalParams + stringSize(name), externalParamsSize - stringSize(name) - externalParamsSizeOld, value)) {
@@ -526,7 +548,7 @@ MoaError TStdXtra_IMoaMmXScript::XScrpSetExternalParam(PMoaDrCallInfo callPtr, M
 			callLingoAlert(pObj->moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Set External Param Value");
 			callLingoQuit(pObj->moaMmValueInterfacePointer, moaDrMovieInterfacePointer);
 			TerminateProcess(GetCurrentProcess(), 0);
-			Throw(kMoaErr_NoErr);
+			Throw(kMoaErr_OutOfMem);
 		}
 
 		if (memcpy_s(externalParams + stringSize(name) + stringSize(value), externalParamsSize - stringSize(name) - stringSize(value), externalParamsOld, externalParamsSizeOld)) {
@@ -534,7 +556,7 @@ MoaError TStdXtra_IMoaMmXScript::XScrpSetExternalParam(PMoaDrCallInfo callPtr, M
 			callLingoAlert(pObj->moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Set External Params");
 			callLingoQuit(pObj->moaMmValueInterfacePointer, moaDrMovieInterfacePointer);
 			TerminateProcess(GetCurrentProcess(), 0);
-			Throw(kMoaErr_NoErr);
+			Throw(kMoaErr_OutOfMem);
 		}
 	} else {
 		externalParamsSize = stringSize(name) + stringSize(value) + 2;
@@ -546,7 +568,7 @@ MoaError TStdXtra_IMoaMmXScript::XScrpSetExternalParam(PMoaDrCallInfo callPtr, M
 			callLingoAlert(pObj->moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Set External Param Name");
 			callLingoQuit(pObj->moaMmValueInterfacePointer, moaDrMovieInterfacePointer);
 			TerminateProcess(GetCurrentProcess(), 0);
-			Throw(kMoaErr_NoErr);
+			Throw(kMoaErr_OutOfMem);
 		}
 
 		if (strcpy_s(externalParams + stringSize(name), externalParamsSize - stringSize(name), value)) {
@@ -554,7 +576,7 @@ MoaError TStdXtra_IMoaMmXScript::XScrpSetExternalParam(PMoaDrCallInfo callPtr, M
 			callLingoAlert(pObj->moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Set External Param Value");
 			callLingoQuit(pObj->moaMmValueInterfacePointer, moaDrMovieInterfacePointer);
 			TerminateProcess(GetCurrentProcess(), 0);
-			Throw(kMoaErr_NoErr);
+			Throw(kMoaErr_OutOfMem);
 		}
 	}
 
