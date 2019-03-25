@@ -245,7 +245,7 @@ STDMETHODIMP TStdXtra_IMoaRegister::Register(PIMoaCache pCache, PIMoaXtraEntryDi
 	// register the Method Table
 	const char* VER_MAJORVERSION_STRING = "1";
 	const char* VER_MINORVERSION_STRING = "4";
-	const char* VER_BUGFIXVERSION_STRING = "1";
+	const char* VER_BUGFIXVERSION_STRING = "2";
 
 	sprintf_s(versionStr, VERSION_STR_SIZE, versionInfo, VER_MAJORVERSION_STRING, VER_MINORVERSION_STRING, VER_BUGFIXVERSION_STRING);
 
@@ -255,11 +255,11 @@ STDMETHODIMP TStdXtra_IMoaRegister::Register(PIMoaCache pCache, PIMoaXtraEntryDi
 
 	if (strcpy_s((char*)pMemStr, stringSize(versionStr), versionStr)) {
 		TerminateProcess(GetCurrentProcess(), 0);
-		Throw(kMoaErr_NoErr);
+		Throw(kMoaErr_OutOfMem);
 	}
 	if (strcat_s((char*)pMemStr, strlen(versionStr) + stringSize(msgTable), msgTable)) {
 		TerminateProcess(GetCurrentProcess(), 0);
-		Throw(kMoaErr_NoErr);
+		Throw(kMoaErr_OutOfMem);
 	}
 
 	ThrowErr(pReg->Put(kMoaDrDictType_MessageTable, pMemStr, 0, kMoaDrDictKey_MessageTable));
@@ -383,7 +383,7 @@ MoaError TStdXtra_IMoaMmXScript::XScrpExtender(PMoaDrCallInfo callPtr, MODULE mo
 	if (!extender(pObj->moaMmValueInterfacePointer, moaDrMovieInterfacePointer, callPtr->methodSelector, module)) {
 		callLingoQuit(pObj->moaMmValueInterfacePointer, moaDrMovieInterfacePointer);
 		TerminateProcess(GetCurrentProcess(), 0);
-		Throw(kMoaErr_NoErr);
+		Throw(kMoaErr_InternalError);
 	}
 	moa_catch
 	moa_catch_end

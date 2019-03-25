@@ -1,4 +1,4 @@
-LeechProtectionRemovalHelp Xtra 1.4.1 Hotfix 1
+LeechProtectionRemovalHelp Xtra 1.4.2
 By Anthony Kleine
 
 	This Director Xtra allows for the archival of Shockwave Movies
