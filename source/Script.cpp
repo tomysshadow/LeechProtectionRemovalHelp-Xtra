@@ -228,9 +228,6 @@ END_DEFINE_CLASS_INTERFACE
 STDMETHODIMP TStdXtra_IMoaRegister::Register(PIMoaCache pCache, PIMoaXtraEntryDict pXtraDict) {
 	moa_try
 
-	ThrowNull(pCache);
-	ThrowNull(pXtraDict);
-
 	PIMoaRegistryEntryDict pReg = NULL;
 	MoaBool bItsSafe = FALSE;
 
@@ -239,13 +236,16 @@ STDMETHODIMP TStdXtra_IMoaRegister::Register(PIMoaCache pCache, PIMoaXtraEntryDi
 
 	PMoaVoid pMemStr = NULL;
 
+	ThrowNull(pCache);
+	ThrowNull(pXtraDict);
+
 	// register the Lingo Xtra
 	ThrowErr(pCache->AddRegistryEntry(pXtraDict, &CLSID_TStdXtra, &IID_IMoaMmXScript, &pReg));
 
 	// register the Method Table
 	const char* VER_MAJORVERSION_STRING = "1";
 	const char* VER_MINORVERSION_STRING = "4";
-	const char* VER_BUGFIXVERSION_STRING = "2";
+	const char* VER_BUGFIXVERSION_STRING = "3";
 
 	sprintf_s(versionStr, VERSION_STR_SIZE, versionInfo, VER_MAJORVERSION_STRING, VER_MINORVERSION_STRING, VER_BUGFIXVERSION_STRING);
 
@@ -393,10 +393,11 @@ MoaError TStdXtra_IMoaMmXScript::XScrpExtender(PMoaDrCallInfo callPtr, MODULE mo
 MoaError TStdXtra_IMoaMmXScript::XScrpExtender(PMoaDrCallInfo callPtr, MODULE module) {
 	moa_try
 
+	PIMoaDrMovie moaDrMovieInterfacePointer = NULL;
+
 	ThrowNull(callPtr);
 
 	// get the Active Movie (so we can call a Lingo Handler in it if we need to)
-	PIMoaDrMovie moaDrMovieInterfacePointer = NULL;
 	ThrowErr(pObj->moaDrPlayerInterfacePointer->GetActiveMovie(&moaDrMovieInterfacePointer));
 	
 	ThrowErr(XScrpExtender(callPtr, module, moaDrMovieInterfacePointer));
@@ -452,13 +453,13 @@ MoaError TStdXtra_IMoaMmXScript::XScrpExtender(PMoaDrCallInfo callPtr, MODULE mo
 
 MoaError TStdXtra_IMoaMmXScript::XScrpSetExternalParam(PMoaDrCallInfo callPtr, MODULE module) {
 	moa_try
-
-	ThrowNull(callPtr);
-
 	size_t externalParamsSizeOld = 0;
 	PMoaChar externalParamsOld = NULL;
 	
 	PIMoaDrMovie moaDrMovieInterfacePointer = NULL;
+
+	ThrowNull(callPtr);
+
 	ThrowErr(pObj->moaDrPlayerInterfacePointer->GetActiveMovie(&moaDrMovieInterfacePointer));
 
 	MoaMmValue argumentValue = kVoidMoaMmValueInitializer;
