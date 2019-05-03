@@ -245,7 +245,7 @@ STDMETHODIMP TStdXtra_IMoaRegister::Register(PIMoaCache pCache, PIMoaXtraEntryDi
 	// register the Method Table
 	const char* VER_MAJORVERSION_STRING = "1";
 	const char* VER_MINORVERSION_STRING = "4";
-	const char* VER_BUGFIXVERSION_STRING = "3";
+	const char* VER_BUGFIXVERSION_STRING = "4";
 
 	sprintf_s(versionStr, VERSION_STR_SIZE, versionInfo, VER_MAJORVERSION_STRING, VER_MINORVERSION_STRING, VER_BUGFIXVERSION_STRING);
 
