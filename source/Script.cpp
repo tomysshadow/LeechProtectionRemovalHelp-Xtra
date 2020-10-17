@@ -244,8 +244,8 @@ STDMETHODIMP TStdXtra_IMoaRegister::Register(PIMoaCache pCache, PIMoaXtraEntryDi
 
 	// register the Method Table
 	const char* VER_MAJORVERSION_STRING = "1";
-	const char* VER_MINORVERSION_STRING = "4";
-	const char* VER_BUGFIXVERSION_STRING = "4";
+	const char* VER_MINORVERSION_STRING = "5";
+	const char* VER_BUGFIXVERSION_STRING = "0";
 
 	sprintf_s(versionStr, VERSION_STR_SIZE, versionInfo, VER_MAJORVERSION_STRING, VER_MINORVERSION_STRING, VER_BUGFIXVERSION_STRING);
 
@@ -520,6 +520,7 @@ MoaError TStdXtra_IMoaMmXScript::XScrpSetExternalParam(PMoaDrCallInfo callPtr, M
 					TerminateProcess(GetCurrentProcess(), 0);
 					Throw(kMoaErr_OutOfMem);
 				}
+
 				externalParamsSizeOld -= externalParamOldNameSize + externalParamOldValueSize;
 				break;
 			}
@@ -536,7 +537,15 @@ MoaError TStdXtra_IMoaMmXScript::XScrpSetExternalParam(PMoaDrCallInfo callPtr, M
 		externalParams = (PMoaChar)pObj->pCalloc->NRAlloc(externalParamsSize);
 		ThrowNull(externalParams);
 
-		if (strcpy_s(externalParams, externalParamsSize - stringSize(value) - externalParamsSizeOld, name)) {
+		if (memcpy_s(externalParams, externalParamsSize - stringSize(name) - stringSize(value) - 2, externalParamsOld, externalParamsSizeOld - 2)) {
+			// dangerous - memory is in unknown state, so quit
+			callLingoAlert(pObj->moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Set External Params");
+			callLingoQuit(pObj->moaMmValueInterfacePointer, moaDrMovieInterfacePointer);
+			TerminateProcess(GetCurrentProcess(), 0);
+			Throw(kMoaErr_OutOfMem);
+		}
+
+		if (strcpy_s(externalParams + externalParamsSize - stringSize(name) - stringSize(value) - 2, externalParamsSize - stringSize(value) - externalParamsSizeOld, name)) {
 			// dangerous - string is in unknown state, so quit
 			callLingoAlert(pObj->moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Set External Param Name");
 			callLingoQuit(pObj->moaMmValueInterfacePointer, moaDrMovieInterfacePointer);
@@ -544,17 +553,9 @@ MoaError TStdXtra_IMoaMmXScript::XScrpSetExternalParam(PMoaDrCallInfo callPtr, M
 			Throw(kMoaErr_OutOfMem);
 		}
 
-		if (strcpy_s(externalParams + stringSize(name), externalParamsSize - stringSize(name) - externalParamsSizeOld, value)) {
+		if (strcpy_s(externalParams + externalParamsSize - stringSize(value) - 2, externalParamsSize - stringSize(name) - externalParamsSizeOld, value)) {
 			// dangerous - string is in unknown state, so quit
 			callLingoAlert(pObj->moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Set External Param Value");
-			callLingoQuit(pObj->moaMmValueInterfacePointer, moaDrMovieInterfacePointer);
-			TerminateProcess(GetCurrentProcess(), 0);
-			Throw(kMoaErr_OutOfMem);
-		}
-
-		if (memcpy_s(externalParams + stringSize(name) + stringSize(value), externalParamsSize - stringSize(name) - stringSize(value), externalParamsOld, externalParamsSizeOld)) {
-			// dangerous - memory is in unknown state, so quit
-			callLingoAlert(pObj->moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Set External Params");
 			callLingoQuit(pObj->moaMmValueInterfacePointer, moaDrMovieInterfacePointer);
 			TerminateProcess(GetCurrentProcess(), 0);
 			Throw(kMoaErr_OutOfMem);
@@ -678,6 +679,8 @@ EXTENDED_CODE_ADDRESS forceTheSafePlayerExtendedCodeSubroutineAddress4 = 0x00000
 EXTENDED_CODE_ADDRESS bugfixShockwave3DBadDriverListExtendedCodeReturnAddress = 0x00000000;
 
 EXTENDED_CODE_ADDRESS bugfixShockwave3DBadDriverList2ExtendedCodeReturnAddress = 0x00000000;
+
+EXTENDED_CODE_ADDRESS bugfixShockwave3DBadDriverList3ExtendedCodeReturnAddress = 0x00000000;
 
 EXTENDED_CODE_ADDRESS theEnvironmentCompareAddress = 0x00000000;
 
@@ -4118,7 +4121,7 @@ __declspec(naked) void forceTheSafePlayerExtendedCode11() {
 
 __declspec(naked) void bugfixShockwave3DBadDriverListExtendedCode11() {
 	__asm {
-		mov esi, [ebp - 00000018h];
+		mov esi, [ebp - 00000010h];
 		add esi, 00000109h;
 		jmp [bugfixShockwave3DBadDriverListExtendedCodeReturnAddress];
 	}
@@ -4126,10 +4129,10 @@ __declspec(naked) void bugfixShockwave3DBadDriverListExtendedCode11() {
 
 __declspec(naked) void bugfixShockwave3DBadDriverListExtendedCode211() {
 	__asm {
-		push 00000104h;
+		mov esi, 00000104h;
+		push esi;
 		push edi;
-		mov [ebp - 00000010h], edi;
-		mov [ebp - 00000018h], esi;
+		mov [ebp - 00000020h], edi;
 		jmp [bugfixShockwave3DBadDriverList2ExtendedCodeReturnAddress];
 	}
 }
@@ -4172,7 +4175,7 @@ __declspec(naked) void bugfixShockwave3DBadDriverListExtendedCode211() {
 
 __declspec(naked) void bugfixShockwave3DBadDriverListExtendedCode1103() {
 	__asm {
-		mov edi, [ebp - 0000001Ch];
+		mov edi, [ebp - 00000014h];
 		add edi, 00000109h;
 		jmp [bugfixShockwave3DBadDriverListExtendedCodeReturnAddress];
 	}
@@ -4180,10 +4183,10 @@ __declspec(naked) void bugfixShockwave3DBadDriverListExtendedCode1103() {
 
 __declspec(naked) void bugfixShockwave3DBadDriverListExtendedCode21103() {
 	__asm {
-		push 00000104h;
+		mov edi, 00000104h;
+		push edi;
 		push ebx;
-		mov [ebp - 00000014h], ebx;
-		mov [ebp - 0000001Ch], edi;
+		mov [ebp - 00000014h], edi;
 		jmp [bugfixShockwave3DBadDriverList2ExtendedCodeReturnAddress];
 	}
 }
@@ -4269,14 +4272,22 @@ __declspec(naked) void bugfixShockwave3DBadDriverListExtendedCode1158() {
 		call esi;
 		cmp eax, ebx;
 		jnz epilogue2;
-		mov eax, [esp  - 00000004h];
-		mov eax, [eax];
+		mov eax, [ebp - 00000010h];
 		add eax, 00000214h;
 		push eax;
-		jmp [bugfixShockwave3DBadDriverListExtendedCodeReturnAddress];
+		push [ebp - 00000018h];
+		jmp[bugfixShockwave3DBadDriverListExtendedCodeReturnAddress];
 
-		epilogue2:
-		jmp [bugfixShockwave3DBadDriverList2ExtendedCodeReturnAddress];
+	epilogue2:
+		jmp[bugfixShockwave3DBadDriverList2ExtendedCodeReturnAddress];
+	}
+}
+
+__declspec(naked) void bugfixShockwave3DBadDriverListExtendedCode21158() {
+	__asm {
+		mov eax, [esp + 00000008h];
+		mov [esp], eax;
+		jmp [bugfixShockwave3DBadDriverList3ExtendedCodeReturnAddress];
 	}
 }
 
@@ -4506,19 +4517,29 @@ __declspec(naked) void setTheMachineTypeExtendedCode1159() {
 
 #define bugfixShockwave3DBadDriverListExtendedCode1159 bugfixShockwave3DBadDriverListExtendedCode1158
 
+#define bugfixShockwave3DBadDriverListExtendedCode21159 bugfixShockwave3DBadDriverListExtendedCode21158
+
 __declspec(naked) void bugfixShockwave3DBadDriverListExtendedCode1165() {
 	__asm {
 		call edi;
 		cmp eax, esi;
 		jnz epilogue2;
-		mov eax, [esp - 00000004h];
-		mov eax, [eax];
+		mov eax, [ebp - 00000058h];
 		add eax, 00000214h;
 		push eax;
-		jmp [bugfixShockwave3DBadDriverListExtendedCodeReturnAddress];
+		push[ebp - 00000060h];
+		jmp[bugfixShockwave3DBadDriverListExtendedCodeReturnAddress];
 
 	epilogue2:
-		jmp [bugfixShockwave3DBadDriverList2ExtendedCodeReturnAddress];
+		jmp[bugfixShockwave3DBadDriverList2ExtendedCodeReturnAddress];
+	}
+}
+
+__declspec(naked) void bugfixShockwave3DBadDriverListExtendedCode21165() {
+	__asm {
+		mov eax, [esp + 00000008h];
+		mov [esp], eax;
+		jmp [bugfixShockwave3DBadDriverList3ExtendedCodeReturnAddress];
 	}
 }
 
@@ -5400,7 +5421,29 @@ __declspec(naked) void forceTheSafePlayerExtendedCode12() {
 	}
 }
 
-#define bugfixShockwave3DBadDriverListExtendedCode12 bugfixShockwave3DBadDriverListExtendedCode1165
+__declspec(naked) void bugfixShockwave3DBadDriverListExtendedCode12() {
+	__asm {
+		call edi;
+		cmp eax, esi;
+		jnz epilogue2;
+		mov eax, [ebp - 000003E4h];
+		add eax, 00000214h;
+		push eax;
+		push[ebp - 000003ECh];
+		jmp[bugfixShockwave3DBadDriverListExtendedCodeReturnAddress];
+
+	epilogue2:
+		jmp[bugfixShockwave3DBadDriverList2ExtendedCodeReturnAddress];
+	}
+}
+
+__declspec(naked) void bugfixShockwave3DBadDriverListExtendedCode212() {
+	__asm {
+		mov eax, [esp + 00000008h];
+		mov[esp], eax;
+		jmp[bugfixShockwave3DBadDriverList3ExtendedCodeReturnAddress];
+	}
+}
 
 __declspec(naked) void disableGoToNetThingExtendedCode() {
 	__asm {
@@ -7611,67 +7654,63 @@ bool extender(PIMoaMmValue moaMmValueInterfacePointer, PIMoaDrMovie moaDrMovieIn
 			}
 			break;
 			case MODULE_DIRECTOR_1158:
-			bugfixShockwave3DBadDriverListExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x000D891F);
+			bugfixShockwave3DBadDriverListExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x000D8922);
 			bugfixShockwave3DBadDriverList2ExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x000D89DD);
+			bugfixShockwave3DBadDriverList3ExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x000D893B);
 
 			switch (methodSelector) {
 				case m_bugfixShockwave3DBadDriverList:
-				for (DWORD i = 0;i < 5;i++) {
-					if (!extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000D8936 + i)) {
-						callLingoAlertAntivirus(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Extend Code");
-						return false;
-					}
+				if (!extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000D8915, bugfixShockwave3DBadDriverListExtendedCode1158)) {
+					callLingoAlertAntivirus(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Extend Code");
+					return false;
 				}
 
-				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000D8915, bugfixShockwave3DBadDriverListExtendedCode1158);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000D8936, bugfixShockwave3DBadDriverListExtendedCode21158);
 			}
 			break;
 			case MODULE_DIRECTOR_1159:
-			bugfixShockwave3DBadDriverListExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x000EB198);
+			bugfixShockwave3DBadDriverListExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x000EB19B);
 			bugfixShockwave3DBadDriverList2ExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x000EB256);
+			bugfixShockwave3DBadDriverList3ExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x000EB1B4);
 
 			switch (methodSelector) {
 				case m_bugfixShockwave3DBadDriverList:
-				for (DWORD i = 0;i < 5;i++) {
-					if (!extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000EB1AF + i)) {
-						callLingoAlertAntivirus(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Extend Code");
-						return false;
-					}
+				if (!extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000EB18E, bugfixShockwave3DBadDriverListExtendedCode1159)) {
+					callLingoAlertAntivirus(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Extend Code");
+					return false;
 				}
 
-				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000EB18E, bugfixShockwave3DBadDriverListExtendedCode1159);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000EB1AF, bugfixShockwave3DBadDriverListExtendedCode21159);
 			}
 			break;
 			case MODULE_DIRECTOR_1165:
-			bugfixShockwave3DBadDriverListExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x000F3D03);
+			bugfixShockwave3DBadDriverListExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x000F3D06);
 			bugfixShockwave3DBadDriverList2ExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x000F3DB3);
+			bugfixShockwave3DBadDriverList3ExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x000F3D1F);
 
 			switch (methodSelector) {
 				case m_bugfixShockwave3DBadDriverList:
-				for (DWORD i = 0; i < 5; i++) {
-					if (!extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000F3D1A + i)) {
-						callLingoAlertAntivirus(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Extend Code");
-						return false;
-					}
+				if (!extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000F3CF9, bugfixShockwave3DBadDriverListExtendedCode1165)) {
+					callLingoAlertAntivirus(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Extend Code");
+					return false;
 				}
 
-				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000F3CF9, bugfixShockwave3DBadDriverListExtendedCode1165);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000F3D1A, bugfixShockwave3DBadDriverListExtendedCode21165);
 			}
 			break;
 			case MODULE_DIRECTOR_12:
-			bugfixShockwave3DBadDriverListExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x000FF918);
+			bugfixShockwave3DBadDriverListExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x000FF91E);
 			bugfixShockwave3DBadDriverList2ExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x000FFA04);
+			bugfixShockwave3DBadDriverList3ExtendedCodeReturnAddress = createExtendedCodeAddress(moduleHandle, 0x000FF937);
 
 			switch (methodSelector) {
 				case m_bugfixShockwave3DBadDriverList:
-				for (DWORD i = 0;i < 5;i++) {
-					if (!extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000FF932 + i)) {
-						callLingoAlertAntivirus(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Extend Code");
-						return false;
-					}
+				if (!extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000FF90E, bugfixShockwave3DBadDriverListExtendedCode12)) {
+					callLingoAlertAntivirus(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Extend Code");
+					return false;
 				}
 
-				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000FF90E, bugfixShockwave3DBadDriverListExtendedCode12);
+				codeExtended = extendCode(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, moduleHandle, 0x000FF932, bugfixShockwave3DBadDriverListExtendedCode212);
 			}
 		}
 	}
@@ -7681,8 +7720,6 @@ bool extender(PIMoaMmValue moaMmValueInterfacePointer, PIMoaDrMovie moaDrMovieIn
 		callLingoAlertAntivirus(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Extend Code");
 		return false;
 	}
-
-	// cleanup
 	return true;
 }
 /* End Extender */

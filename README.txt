@@ -1,4 +1,4 @@
-LeechProtectionRemovalHelp Xtra 1.4.4
+LeechProtectionRemovalHelp Xtra 1.5.0
 By Anthony Kleine
 
 	This Director Xtra allows for the archival of Shockwave Movies
@@ -10,10 +10,6 @@ By Anthony Kleine
 	a number of Director versions from 8 - 12.
 
 	This Xtra is NOT Shockwave Safe.
-
-
-Video Tutorial
-	Coming Soon
 
 
 Tested With
@@ -33,6 +29,8 @@ Tested With
 	-12.0.0.111
 
 	Compatibility with untested versions is not guaranteed.
+	
+	This Xtra only works reliably in Projectors. It might not have any effect when debugging.
 
 
 Usage
