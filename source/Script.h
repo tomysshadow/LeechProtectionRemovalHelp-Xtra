@@ -94,7 +94,7 @@ inline bool memoryEqual(const void* buffer, const void* buffer2, size_t bufferSi
 	return !memcmp(buffer, buffer2, bufferSize);
 }
 
-bool shiftMemory(size_t bufferSize, const void* buffer, size_t sourceSize, const void* source, unsigned int shift, bool direction) {
+bool shiftMemory(size_t bufferSize, void* buffer, size_t sourceSize, void* source, size_t shift, bool direction) {
 	if (source < buffer || (char*)source + sourceSize > (char*)buffer + bufferSize) {
 		return false;
 	}
@@ -379,20 +379,6 @@ bool unprotectCode(PIMoaMmValue moaMmValueInterfacePointer, PIMoaDrMovie moaDrMo
 	}
 
 	if (!virtualAddress || !virtualSize || !VirtualProtect((LPVOID)virtualAddress, virtualSize, PAGE_EXECUTE_READWRITE, &oldProtect)) {
-		return false;
-	}
-
-	// get Basic Memory Information
-	MEMORY_BASIC_INFORMATION memoryBasicInformation;
-
-	if (VirtualQuery((LPCVOID)virtualAddress, &memoryBasicInformation, sizeof(memoryBasicInformation)) != sizeof(memoryBasicInformation)
-		|| !memoryBasicInformation.Protect
-		|| memoryBasicInformation.Protect & PAGE_NOACCESS
-		|| memoryBasicInformation.Protect & PAGE_EXECUTE) {
-		// dangerous - we unprotected the code but we can't query it, so quit
-		callLingoAlertAntivirus(moaMmValueInterfacePointer, moaDrMovieInterfacePointer, "Failed to Get Basic Memory Information");
-		callLingoQuit(moaMmValueInterfacePointer, moaDrMovieInterfacePointer);
-		TerminateProcess(GetCurrentProcess(), 0);
 		return false;
 	}
 	return true;

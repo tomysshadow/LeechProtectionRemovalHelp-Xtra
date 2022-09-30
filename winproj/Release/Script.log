@@ -6,7 +6,7 @@ c:\program files (x86)\microsoft sdks\windows\v7.1a\include\specstrings_supp.h(7
   c:\program files (x86)\microsoft visual studio\2017\community\vc\tools\msvc\14.16.27023\include\sal.h(2876): note: see previous definition of '__on_failure'
 c:\program files (x86)\microsoft sdks\windows\v7.1a\include\dbghelp.h(1540): warning C4091: 'typedef ': ignored on left of '<unnamed-enum-hdBase>' when no variable is declared
 c:\program files (x86)\microsoft sdks\windows\v7.1a\include\dbghelp.h(3056): warning C4091: 'typedef ': ignored on left of '<unnamed-enum-sfImage>' when no variable is declared
-c:\users\anthony\documents\visual studio 2017\projects\xdk_win\xdk\examples\script\leechprotectionremovalhelp xtra\source\script.h(102): warning C4133: '-': incompatible types - from 'const void *' to 'char *'
+c:\users\anthony\documents\visual studio 2017\projects\xdk_win\xdk\examples\script\leechprotectionremovalhelp xtra\source\script.h(102): warning C4133: '-': incompatible types - from 'void *' to 'char *'
 c:\users\anthony\documents\visual studio 2017\projects\xdk_win\xdk\examples\script\leechprotectionremovalhelp xtra\source\script.cpp(156): warning C4005: '_GLUE_CANUNLOADNOW': macro redefinition
   c:\users\anthony\documents\visual studio 2017\projects\xdk_win\xdk\include\moaxtra.h(1067): note: see previous definition of '_GLUE_CANUNLOADNOW'
 c:\users\anthony\documents\visual studio 2017\projects\xdk_win\xdk\examples\script\leechprotectionremovalhelp xtra\source\script.cpp(428): warning C4533: initialization of 'argumentValue' is skipped by 'goto __failure'
