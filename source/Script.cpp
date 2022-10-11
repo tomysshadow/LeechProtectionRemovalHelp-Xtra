@@ -112,13 +112,13 @@ static char msgTable[] = {
 	"* setTheMachineType integer machineType -- sets the machineType property\n"
 	"-- Set External Params --\n"
 	"* setExternalParam string name, string value -- sets an External Param\n"
-	"-- name cannot be empty\n"
+	"-- name must not be empty\n"
 	"-- Force Properties --\n"
 	"* forceTheExitLock integer exitLock -- forces the exitLock property\n"
 	"* forceTheSafePlayer integer safePlayer -- forces the safePlayer property\n"
-	"-- Disable Functions --\n"
-	"* disableGoToNetMovie -- disables goToNetMovie\n"
-	"* disableGoToNetPage -- disables goToNetPage\n"
+	"-- Disable Handlers --\n"
+	"* disableGoToNetMovie -- disables goToNetMovie handler\n"
+	"* disableGoToNetPage -- disables goToNetPage handler\n"
 	"-- Bugfixes --\n"
 	"* bugfixShockwave3DBadDriverList -- bugfixes Shockwave 3D Bad Driver List"
 };
@@ -477,7 +477,7 @@ MoaError TStdXtra_IMoaMmXScript::XScrpSetExternalParam(PMoaDrCallInfo callPtr, M
 	AccessArgByIndex(2, &argumentValue);
 	ThrowErr(pObj->moaMmValueInterfacePointer->ValueToString(&argumentValue, (PMoaChar)value, VALUE_SIZE));
 
-	// name cannot be empty
+	// name must not be empty
 	if (stringNullOrEmpty(name)) {
 		Throw(kMoaErr_BadParam);
 	}

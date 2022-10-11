@@ -30,7 +30,7 @@ Tested With
 
 	Compatibility with untested versions is not guaranteed.
 	
-	This Xtra only works reliably in Projectors. It might not have any effect when debugging.
+	This Xtra only works reliably in Projectors. It may not have any effect during authoring.
 
 
 Usage
@@ -80,12 +80,12 @@ Message Table
 	* setTheMachineType integer machineType -- sets the machineType property
 	-- Set External Params --
 	* setExternalParam string name, string value -- sets an External Param
-	-- name cannot be empty
+	-- name must not be empty
 	-- Force Properties --
 	* forceTheExitLock integer exitLock -- forces the exitLock property
 	* forceTheSafePlayer integer safePlayer -- forces the safePlayer property
-	-- Disable Functions --
-	* disableGoToNetMovie -- disables goToNetMovie
-	* disableGoToNetPage -- disables goToNetPage
+	-- Disable Handlers --
+	* disableGoToNetMovie -- disables goToNetMovie handler
+	* disableGoToNetPage -- disables goToNetPage handler
 	-- Bugfixes --
 	* bugfixShockwave3DBadDriverList -- bugfixes Shockwave 3D Bad Driver List
