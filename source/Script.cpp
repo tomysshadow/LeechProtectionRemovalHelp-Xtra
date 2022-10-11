@@ -5518,12 +5518,12 @@ bool extender(MoaMmSymbol methodSelector, MODULE module, PIMoaDrMovie moaDrMovie
 	HMODULE moduleHandle = NULL;
 
 	if (!getInterfaceModuleHandle(moduleHandle, module, moaDrMovieInterfacePointer, callbackPointer)) {
-		callLingoAlertXtraMissing(moaDrMovieInterfacePointer, moaMmValueInterfacePointer, "Failed to Get Interface Module Handle");
+		callLingoAlertXtraMissing("Failed to Get Interface Module Handle", moaDrMovieInterfacePointer, moaMmValueInterfacePointer);
 		return false;
 	}
 
 	if (!moduleHandle) {
-		callLingoAlertXtraMissing(moaDrMovieInterfacePointer, moaMmValueInterfacePointer, "moduleHandle must not be NULL");
+		callLingoAlertXtraMissing("moduleHandle must not be NULL", moaDrMovieInterfacePointer, moaMmValueInterfacePointer);
 		return false;
 	}
 
@@ -5584,7 +5584,7 @@ bool extender(MoaMmSymbol methodSelector, MODULE module, PIMoaDrMovie moaDrMovie
 		}
 
 		if (directorAPIDirectorVersion == MODULE_DIRECTOR_INCOMPATIBLE) {
-			callLingoAlertIncompatibleDirectorVersion(moaDrMovieInterfacePointer, moaMmValueInterfacePointer, "Failed to Get Module Director Version");
+			callLingoAlertIncompatibleDirectorVersion("Failed to Get Module Director Version", moaDrMovieInterfacePointer, moaMmValueInterfacePointer);
 			return false;
 		}
 
@@ -5704,7 +5704,7 @@ bool extender(MoaMmSymbol methodSelector, MODULE module, PIMoaDrMovie moaDrMovie
 				forceTheSafePlayerExtendedCodeReturnAddress = makeExtendedCodeAddress(moduleHandle, 0x0002239C);
 				codeExtended = extendCode(moduleHandle, 0x00022319, forceTheSafePlayerExtendedCode8);
 
-				if (!setLingoSafePlayer(moaDrMovieInterfacePointer, moaMmValueInterfacePointer, theSafePlayer)) {
+				if (!setLingoSafePlayer(theSafePlayer, moaDrMovieInterfacePointer, moaMmValueInterfacePointer)) {
 					goto noSafePlayer;
 				}
 			}
@@ -5829,7 +5829,7 @@ bool extender(MoaMmSymbol methodSelector, MODULE module, PIMoaDrMovie moaDrMovie
 				forceTheSafePlayerExtendedCodeReturnAddress = makeExtendedCodeAddress(moduleHandle, 0x0001CB1D);
 				codeExtended = extendCode(moduleHandle, 0x0001CAEB, forceTheSafePlayerExtendedCode85);
 
-				if (!setLingoSafePlayer(moaDrMovieInterfacePointer, moaMmValueInterfacePointer, theSafePlayer)) {
+				if (!setLingoSafePlayer(theSafePlayer, moaDrMovieInterfacePointer, moaMmValueInterfacePointer)) {
 					goto noSafePlayer;
 				}
 			}
@@ -5954,7 +5954,7 @@ bool extender(MoaMmSymbol methodSelector, MODULE module, PIMoaDrMovie moaDrMovie
 				forceTheSafePlayerExtendedCodeReturnAddress = makeExtendedCodeAddress(moduleHandle, 0x0001CB56);
 				codeExtended = extendCode(moduleHandle, 0x0001CB24, forceTheSafePlayerExtendedCode851);
 
-				if (!setLingoSafePlayer(moaDrMovieInterfacePointer, moaMmValueInterfacePointer, theSafePlayer)) {
+				if (!setLingoSafePlayer(theSafePlayer, moaDrMovieInterfacePointer, moaMmValueInterfacePointer)) {
 					goto noSafePlayer;
 				}
 			}
@@ -6079,7 +6079,7 @@ bool extender(MoaMmSymbol methodSelector, MODULE module, PIMoaDrMovie moaDrMovie
 				forceTheSafePlayerExtendedCodeReturnAddress = makeExtendedCodeAddress(moduleHandle, 0x0001CB44);
 				codeExtended = extendCode(moduleHandle, 0x0001CB12, forceTheSafePlayerExtendedCode9);
 
-				if (!setLingoSafePlayer(moaDrMovieInterfacePointer, moaMmValueInterfacePointer, theSafePlayer)) {
+				if (!setLingoSafePlayer(theSafePlayer, moaDrMovieInterfacePointer, moaMmValueInterfacePointer)) {
 					goto noSafePlayer;
 				}
 			}
@@ -6215,7 +6215,7 @@ bool extender(MoaMmSymbol methodSelector, MODULE module, PIMoaDrMovie moaDrMovie
 				forceTheSafePlayerExtendedCodeReturnAddress = makeExtendedCodeAddress(moduleHandle, 0x0001E868);
 				codeExtended = extendCode(moduleHandle, 0x0001E836, forceTheSafePlayerExtendedCode10);
 
-				if (!setLingoSafePlayer(moaDrMovieInterfacePointer, moaMmValueInterfacePointer, theSafePlayer)) {
+				if (!setLingoSafePlayer(theSafePlayer, moaDrMovieInterfacePointer, moaMmValueInterfacePointer)) {
 					goto noSafePlayer;
 				}
 			}
@@ -6351,7 +6351,7 @@ bool extender(MoaMmSymbol methodSelector, MODULE module, PIMoaDrMovie moaDrMovie
 				forceTheSafePlayerExtendedCodeReturnAddress = makeExtendedCodeAddress(moduleHandle, 0x0001EC76);
 				codeExtended = extendCode(moduleHandle, 0x0001EC4E, forceTheSafePlayerExtendedCode101);
 
-				if (!setLingoSafePlayer(moaDrMovieInterfacePointer, moaMmValueInterfacePointer, theSafePlayer)) {
+				if (!setLingoSafePlayer(theSafePlayer, moaDrMovieInterfacePointer, moaMmValueInterfacePointer)) {
 					goto noSafePlayer;
 				}
 			}
@@ -6487,7 +6487,7 @@ bool extender(MoaMmSymbol methodSelector, MODULE module, PIMoaDrMovie moaDrMovie
 				forceTheSafePlayerExtendedCodeReturnAddress = makeExtendedCodeAddress(moduleHandle, 0x0001ECC3);
 				codeExtended = extendCode(moduleHandle, 0x0001EC9B, forceTheSafePlayerExtendedCode1011);
 
-				if (!setLingoSafePlayer(moaDrMovieInterfacePointer, moaMmValueInterfacePointer, theSafePlayer)) {
+				if (!setLingoSafePlayer(theSafePlayer, moaDrMovieInterfacePointer, moaMmValueInterfacePointer)) {
 					goto noSafePlayer;
 				}
 			}
@@ -6623,7 +6623,7 @@ bool extender(MoaMmSymbol methodSelector, MODULE module, PIMoaDrMovie moaDrMovie
 				forceTheSafePlayerExtendedCodeReturnAddress = makeExtendedCodeAddress(moduleHandle, 0x00026E08);
 				codeExtended = extendCode(moduleHandle, 0x00026DD0, forceTheSafePlayerExtendedCode11);
 
-				if (!setLingoSafePlayer(moaDrMovieInterfacePointer, moaMmValueInterfacePointer, theSafePlayer)) {
+				if (!setLingoSafePlayer(theSafePlayer, moaDrMovieInterfacePointer, moaMmValueInterfacePointer)) {
 					goto noSafePlayer;
 				}
 			}
@@ -6759,7 +6759,7 @@ bool extender(MoaMmSymbol methodSelector, MODULE module, PIMoaDrMovie moaDrMovie
 				forceTheSafePlayerExtendedCodeReturnAddress = makeExtendedCodeAddress(moduleHandle, 0x00026E38);
 				codeExtended = extendCode(moduleHandle, 0x00026E00, forceTheSafePlayerExtendedCode1103);
 
-				if (!setLingoSafePlayer(moaDrMovieInterfacePointer, moaMmValueInterfacePointer, theSafePlayer)) {
+				if (!setLingoSafePlayer(theSafePlayer, moaDrMovieInterfacePointer, moaMmValueInterfacePointer)) {
 					goto noSafePlayer;
 				}
 			}
@@ -6895,7 +6895,7 @@ bool extender(MoaMmSymbol methodSelector, MODULE module, PIMoaDrMovie moaDrMovie
 				forceTheSafePlayerExtendedCodeReturnAddress = makeExtendedCodeAddress(moduleHandle, 0x00027098);
 				codeExtended = extendCode(moduleHandle, 0x00027060, forceTheSafePlayerExtendedCode115);
 
-				if (!setLingoSafePlayer(moaDrMovieInterfacePointer, moaMmValueInterfacePointer, theSafePlayer)) {
+				if (!setLingoSafePlayer(theSafePlayer, moaDrMovieInterfacePointer, moaMmValueInterfacePointer)) {
 					goto noSafePlayer;
 				}
 			}
@@ -7030,7 +7030,7 @@ bool extender(MoaMmSymbol methodSelector, MODULE module, PIMoaDrMovie moaDrMovie
 				forceTheSafePlayerExtendedCodeReturnAddress = makeExtendedCodeAddress(moduleHandle, 0x00027478);
 				codeExtended = extendCode(moduleHandle, 0x00027440, forceTheSafePlayerExtendedCode1158);
 
-				if (!setLingoSafePlayer(moaDrMovieInterfacePointer, moaMmValueInterfacePointer, theSafePlayer)) {
+				if (!setLingoSafePlayer(theSafePlayer, moaDrMovieInterfacePointer, moaMmValueInterfacePointer)) {
 					goto noSafePlayer;
 				}
 			}
@@ -7166,7 +7166,7 @@ bool extender(MoaMmSymbol methodSelector, MODULE module, PIMoaDrMovie moaDrMovie
 				forceTheSafePlayerExtendedCodeReturnAddress = makeExtendedCodeAddress(moduleHandle, 0x000276C8);
 				codeExtended = extendCode(moduleHandle, 0x000276A0 - 0x00000010, forceTheSafePlayerExtendedCode1159);
 				
-				if (!setLingoSafePlayer(moaDrMovieInterfacePointer, moaMmValueInterfacePointer, theSafePlayer)) {
+				if (!setLingoSafePlayer(theSafePlayer, moaDrMovieInterfacePointer, moaMmValueInterfacePointer)) {
 					goto noSafePlayer;
 				}
 			}
@@ -7308,7 +7308,7 @@ bool extender(MoaMmSymbol methodSelector, MODULE module, PIMoaDrMovie moaDrMovie
 				forceTheSafePlayerExtendedCodeReturnAddress = makeExtendedCodeAddress(moduleHandle, 0x0007C1D7);
 				codeExtended = extendCode(moduleHandle, 0x0007C193, forceTheSafePlayerExtendedCode12);
 
-				if (!setLingoSafePlayer(moaDrMovieInterfacePointer, moaMmValueInterfacePointer, theSafePlayer)) {
+				if (!setLingoSafePlayer(theSafePlayer, moaDrMovieInterfacePointer, moaMmValueInterfacePointer)) {
 					goto noSafePlayer;
 				}
 			}
@@ -7359,7 +7359,7 @@ bool extender(MoaMmSymbol methodSelector, MODULE module, PIMoaDrMovie moaDrMovie
 		}
 
 		if (netLingoXtraDirectorVersion == MODULE_DIRECTOR_INCOMPATIBLE) {
-			callLingoAlertIncompatibleDirectorVersion(moaDrMovieInterfacePointer, moaMmValueInterfacePointer, "Failed to Get Module Director Version");
+			callLingoAlertIncompatibleDirectorVersion("Failed to Get Module Director Version", moaDrMovieInterfacePointer, moaMmValueInterfacePointer);
 			return false;
 		}
 
@@ -7494,7 +7494,7 @@ bool extender(MoaMmSymbol methodSelector, MODULE module, PIMoaDrMovie moaDrMovie
 		}
 
 		if (shockwave3DAssetXtraDirectorVersion == MODULE_DIRECTOR_INCOMPATIBLE) {
-			callLingoAlertIncompatibleDirectorVersion(moaDrMovieInterfacePointer, moaMmValueInterfacePointer, "Failed to Get Module Director Version");
+			callLingoAlertIncompatibleDirectorVersion("Failed to Get Module Director Version", moaDrMovieInterfacePointer, moaMmValueInterfacePointer);
 			return false;
 		}
 
@@ -7665,12 +7665,12 @@ bool extender(MoaMmSymbol methodSelector, MODULE module, PIMoaDrMovie moaDrMovie
 	// in case we failed and didn't catch it somehow
 	if (!codeExtended) {
 		error:
-		callLingoAlertAntivirus(moaDrMovieInterfacePointer, moaMmValueInterfacePointer, "Failed to Extend Code");
+		callLingoAlertAntivirus("Failed to Extend Code", moaDrMovieInterfacePointer, moaMmValueInterfacePointer);
 		return false;
 	}
 	return true;
 	noSafePlayer:
-	callLingoAlert(moaDrMovieInterfacePointer, moaMmValueInterfacePointer, "Failed to Set Lingo Safe Player");
+	callLingoAlert("Failed to Set Lingo Safe Player", moaDrMovieInterfacePointer, moaMmValueInterfacePointer);
 	return false;
 }
 /* End Extender */
