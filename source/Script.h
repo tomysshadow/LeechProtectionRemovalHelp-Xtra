@@ -16,6 +16,8 @@ written permission of Adobe.
 
 #include "shared.h"
 #include "xmmvalue.h"
+#include "moastdif.h"
+#include "mmixscrp.h"
 #include <windows.h>
 
 
