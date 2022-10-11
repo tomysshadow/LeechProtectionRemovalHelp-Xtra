@@ -14,11 +14,14 @@ written permission of Adobe.
 #define INITGUID 1
 
 #include "shared.h"
+#include "script.h"
 #include "Extender.h"
 
-#include "script.h"
-
 #pragma function(strlen)
+#include "moastdif.h"
+#include "mmixscrp.h"
+#include "driservc.h"
+#include "xmmvalue.h"
 #include "xclassver.h"
 #include "moatry.h"
 

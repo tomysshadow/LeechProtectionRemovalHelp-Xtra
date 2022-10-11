@@ -15,9 +15,12 @@ written permission of Adobe.
 #define _H_Script
 
 #include "shared.h"
-#include "xmmvalue.h"
+
 #include "moastdif.h"
 #include "mmixscrp.h"
+#include "driservc.h"
+#include "xmmvalue.h"
+
 #include <windows.h>
 
 
