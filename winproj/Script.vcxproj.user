@@ -9,5 +9,9 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
+    <LocalDebuggerCommand>
+    </LocalDebuggerCommand>
+    <LocalDebuggerWorkingDirectory>
+    </LocalDebuggerWorkingDirectory>
   </PropertyGroup>
 </Project>
