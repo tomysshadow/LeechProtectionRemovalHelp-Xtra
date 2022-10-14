@@ -15,11 +15,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="..\..\..\..\Include\win32\dversion.rc">
-      <Filter>Source Files</Filter>
-    </ResourceCompile>
-  </ItemGroup>
-  <ItemGroup>
     <ClCompile Include="..\source\Script.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -39,17 +34,22 @@
     <ClInclude Include="..\source\Script.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\Include\win32\resource.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\source\shared.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\source\Extender.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\source\resource.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Text Include="..\README.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="..\source\dversion.rc">
+      <Filter>Resource Files</Filter>
+    </ResourceCompile>
   </ItemGroup>
 </Project>
