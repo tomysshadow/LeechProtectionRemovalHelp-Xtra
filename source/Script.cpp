@@ -171,7 +171,19 @@ STDMETHODIMP_(MoaError) MoaCreate_TStdXtra(TStdXtra* This) {
 	ThrowNull(This);
 
 	ThrowErr(This->pCallback->QueryInterface(&IID_IMoaDrPlayer, (PPMoaVoid)&This->moaDrPlayerInterfacePointer));
+	ThrowNull(This->moaDrPlayerInterfacePointer);
+
 	ThrowErr(This->pCallback->QueryInterface(&IID_IMoaMmValue, (PPMoaVoid)&This->moaMmValueInterfacePointer));
+	ThrowNull(This->moaMmValueInterfacePointer);
+
+	// never unload this module
+	HMODULE moduleHandle = NULL;
+
+	if (!GetModuleHandleEx(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_PIN, (LPCSTR)&extender, &moduleHandle)) {
+		showLastError("Failed to Get Module Handle");
+		terminateCurrentProcess();
+		Throw(kMoaErr_OutOfMem);
+	}
 
 	moa_catch
 	moa_catch_end
@@ -186,14 +198,15 @@ STDMETHODIMP_(void) MoaDestroy_TStdXtra(TStdXtra* This) {
 	ThrowNull(This);
 
 	if (This->moaDrPlayerInterfacePointer) {
-		ThrowErr(This->moaDrPlayerInterfacePointer->Release());
+		This->moaDrPlayerInterfacePointer->Release();
 		This->moaDrPlayerInterfacePointer = NULL;
 	}
 
 	if (This->moaMmValueInterfacePointer) {
-		ThrowErr(This->moaMmValueInterfacePointer->Release());
+		This->moaMmValueInterfacePointer->Release();
 		This->moaMmValueInterfacePointer = NULL;
 	}
+
 	moa_catch
 	moa_catch_end
 	// we use moa_try_end_void instead of moa_try_end here since this method returns a void type
@@ -222,20 +235,23 @@ END_DEFINE_CLASS_INTERFACE
 // pass in the arguments for it, which are
 // pointers that we can point to data
 // that will tell Director what this Xtra does
-STDMETHODIMP TStdXtra_IMoaRegister::Register(PIMoaCache pCache, PIMoaXtraEntryDict pXtraDict) {
+STDMETHODIMP TStdXtra_IMoaRegister::Register(PIMoaCache cacheInterfacePointer, PIMoaXtraEntryDict xtraEntryDictInterfacePointer) {
+	PMoaVoid memStrPointer = NULL;
+
 	moa_try
 
-	ThrowNull(pCache);
-	ThrowNull(pXtraDict);
+	ThrowNull(cacheInterfacePointer);
+	ThrowNull(xtraEntryDictInterfacePointer);
 
 	// register the Lingo Xtra
-	PIMoaRegistryEntryDict pReg = NULL;
-	ThrowErr(pCache->AddRegistryEntry(pXtraDict, &CLSID_TStdXtra, &IID_IMoaMmXScript, &pReg));
+	PIMoaRegistryEntryDict registryEntryDictInterfacePointer = NULL;
+	ThrowErr(cacheInterfacePointer->AddRegistryEntry(xtraEntryDictInterfacePointer, &CLSID_TStdXtra, &IID_IMoaMmXScript, &registryEntryDictInterfacePointer));
+	ThrowNull(registryEntryDictInterfacePointer);
 
 	// register the Method Table
 	const char* VER_MAJORVERSION_STRING = "1";
 	const char* VER_MINORVERSION_STRING = "5";
-	const char* VER_BUGFIXVERSION_STRING = "4";
+	const char* VER_BUGFIXVERSION_STRING = "5";
 
 	const size_t VERSION_STR_SIZE = 256;
 	char versionStr[VERSION_STR_SIZE] = "";
@@ -246,39 +262,32 @@ STDMETHODIMP TStdXtra_IMoaRegister::Register(PIMoaCache pCache, PIMoaXtraEntryDi
 		Throw(kMoaErr_OutOfMem);
 	}
 
-	PMoaVoid pMemStr = pObj->pCalloc->NRAlloc(strlen(versionStr) + stringSize(msgTable));
-	ThrowNull(pMemStr);
+	memStrPointer = pObj->pCalloc->NRAlloc(strlen(versionStr) + stringSize(msgTable));
+	ThrowNull(memStrPointer);
 
-	if (strcpy_s((char*)pMemStr, stringSize(versionStr), versionStr)) {
+	if (strcpy_s((char*)memStrPointer, stringSize(versionStr), versionStr)) {
 		showLastError("Failed to Copy String");
 		terminateCurrentProcess();
 		Throw(kMoaErr_OutOfMem);
 	}
 
-	if (strcat_s((char*)pMemStr, strlen(versionStr) + stringSize(msgTable), msgTable)) {
+	if (strcat_s((char*)memStrPointer, strlen(versionStr) + stringSize(msgTable), msgTable)) {
 		showLastError("Failed to Concatenate String");
 		terminateCurrentProcess();
 		Throw(kMoaErr_OutOfMem);
 	}
 
-	ThrowErr(pReg->Put(kMoaDrDictType_MessageTable, pMemStr, 0, kMoaDrDictKey_MessageTable));
-
-	// never unload this module
-	HMODULE moduleHandle = NULL;
-
-	if (!GetModuleHandleEx(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_PIN, (LPCSTR)&extender, &moduleHandle)) {
-		showLastError("Failed to Get Module Handle");
-		terminateCurrentProcess();
-		Throw(kMoaErr_OutOfMem);
-	}
+	ThrowErr(registryEntryDictInterfacePointer->Put(kMoaDrDictType_MessageTable, memStrPointer, 0, kMoaDrDictKey_MessageTable));
 
 	moa_catch
 	moa_catch_end
+
 	// always do this, whether there is an error or not
-	if (pMemStr) {
-		pObj->pCalloc->NRFree(pMemStr);
-		pMemStr = NULL;
+	if (memStrPointer) {
+		pObj->pCalloc->NRFree(memStrPointer);
+		memStrPointer = NULL;
 	}
+
 	moa_try_end
 }
 
@@ -396,11 +405,11 @@ MoaError TStdXtra_IMoaMmXScript::XScrpExtender(PMoaDrCallInfo callPtr, MODULE mo
 }
 
 MoaError TStdXtra_IMoaMmXScript::XScrpExtender(PMoaDrCallInfo callPtr, MODULE module) {
+	PIMoaDrMovie moaDrMovieInterfacePointer = NULL;
+
 	moa_try
 
 	ThrowNull(callPtr);
-
-	PIMoaDrMovie moaDrMovieInterfacePointer = NULL;
 
 	// get the Active Movie (so we can call a Lingo Handler in it if we need to)
 	ThrowErr(pObj->moaDrPlayerInterfacePointer->GetActiveMovie(&moaDrMovieInterfacePointer));
@@ -409,10 +418,12 @@ MoaError TStdXtra_IMoaMmXScript::XScrpExtender(PMoaDrCallInfo callPtr, MODULE mo
 
 	moa_catch
 	moa_catch_end
+
 	if (moaDrMovieInterfacePointer) {
 		moaDrMovieInterfacePointer->Release();
 		moaDrMovieInterfacePointer = NULL;
 	}
+
 	moa_try_end
 }
 
@@ -457,12 +468,14 @@ MoaError TStdXtra_IMoaMmXScript::XScrpExtender(PMoaDrCallInfo callPtr, MODULE mo
 }
 
 MoaError TStdXtra_IMoaMmXScript::XScrpSetExternalParam(PMoaDrCallInfo callPtr, MODULE module) {
+	PIMoaDrMovie moaDrMovieInterfacePointer = NULL;
+
 	MoaMmValue argumentValue = kVoidMoaMmValueInitializer;
+	PMoaChar externalParamsOld = NULL;
 
 	moa_try
 	ThrowNull(callPtr);
 
-	PIMoaDrMovie moaDrMovieInterfacePointer = NULL;
 	ThrowErr(pObj->moaDrPlayerInterfacePointer->GetActiveMovie(&moaDrMovieInterfacePointer));
 
 	const size_t NAME_SIZE = 256;
@@ -483,7 +496,7 @@ MoaError TStdXtra_IMoaMmXScript::XScrpSetExternalParam(PMoaDrCallInfo callPtr, M
 	}
 
 	size_t externalParamsSizeOld = externalParamsSize;
-	PMoaChar externalParamsOld = externalParams;
+	externalParamsOld = externalParams;
 
 	// adds the Param to the "browser"
 	// four strings, at least one of which must be at least one character
@@ -584,6 +597,7 @@ MoaError TStdXtra_IMoaMmXScript::XScrpSetExternalParam(PMoaDrCallInfo callPtr, M
 
 	moa_catch
 	moa_catch_end
+
 	if (externalParamsOld) {
 		pObj->pCalloc->NRFree(externalParamsOld);
 		externalParamsOld = NULL;
@@ -594,6 +608,7 @@ MoaError TStdXtra_IMoaMmXScript::XScrpSetExternalParam(PMoaDrCallInfo callPtr, M
 		moaDrMovieInterfacePointer->Release();
 		moaDrMovieInterfacePointer = NULL;
 	}
+
 	moa_try_end
 }
 /* End Xtra */
