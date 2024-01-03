@@ -769,6 +769,11 @@ __declspec(naked) void setTheMoviePathExtendedCode8() {
 	__asm {
 		// backup EAX
 		push eax;
+
+		// don't set if EDI is null
+		test edi, edi
+		jz do_not_set;
+
 		// compare to the moviePath
 		mov eax, [esp + 00000478h];
 		cmp eax, [setTheMoviePathExtendedCodeCompareAddress];
@@ -806,9 +811,7 @@ __declspec(naked) void setTheMoviePathExtendedCode8() {
 		pop ebx;
 
 		// null-terminate the string
-		// this used to be necessary but
-		// strncpy inherently does this for us now
-		//and [edi + eax], 00000000h
+		and [edi + eax], 00000000h
 
 		// set string length
 		mov bl, al;
@@ -884,9 +887,7 @@ __declspec(naked) void setTheMovieNameExtendedCode8() {
 		pop ecx;
 
 		// null-terminate the string
-		// this used to be necessary but
-		// strncpy inherently does this for us now
-		//and [edi + eax], 00000000h
+		and [edi + eax], 00000000h
 
 		// set string length
 		mov [edi], al;
@@ -1447,6 +1448,11 @@ __declspec(naked) void setTheMoviePathExtendedCode85() {
 	__asm {
 		// backup EAX
 		push eax;
+
+		// don't set if EDI is null
+		test edi, edi
+		jz do_not_set;
+
 		// compare to the moviePath
 		mov eax, [esp + 00000474h];
 		cmp eax, [setTheMoviePathExtendedCodeCompareAddress];
@@ -1484,9 +1490,7 @@ __declspec(naked) void setTheMoviePathExtendedCode85() {
 		pop ebx;
 
 		// null-terminate the string
-		// this used to be necessary but
-		// strncpy inherently does this for us now
-		//and [edi + eax], 00000000h
+		and [edi + eax], 00000000h
 
 		// set string length
 		mov bl, al;
@@ -1553,9 +1557,7 @@ __declspec(naked) void setTheMovieNameExtendedCode85() {
 		pop ecx;
 
 		// null-terminate the string
-		// this used to be necessary but
-		// strncpy inherently does this for us now
-		//and [esi + 00000001h + eax], 00000000h
+		and [esi + 00000001h + eax], 00000000h
 
 		// set string length
 		mov [esi], al;
@@ -2244,6 +2246,11 @@ __declspec(naked) void setTheMoviePathExtendedCode10() {
 	__asm {
 		// backup EAX
 		push eax;
+
+		// don't set if EDI is null
+		test edi, edi
+		jz do_not_set;
+
 		// compare to the moviePath
 		mov eax, [esp + 000006ACh - 00000010h];
 		cmp eax, [setTheMoviePathExtendedCodeCompareAddress];
@@ -2287,9 +2294,7 @@ __declspec(naked) void setTheMoviePathExtendedCode10() {
 		pop ebx;
 
 		// null-terminate the string
-		// this used to be necessary but
-		// strncpy inherently does this for us now
-		//and [edi + eax], 00000000h
+		and [edi + eax], 00000000h
 
 		// set string length
 		mov bl, al;
@@ -2363,9 +2368,7 @@ __declspec(naked) void setTheMovieNameExtendedCode10() {
 		pop ecx;
 
 		// null-terminate the string
-		// this used to be necessary but
-		// strncpy inherently does this for us now
-		//and [esi + 00000001h + eax], 00000000h
+		and [esi + 00000001h + eax], 00000000h
 
 		// set string length
 		mov [esi], al;
@@ -3033,6 +3036,11 @@ __declspec(naked) void setTheMoviePathExtendedCode101() {
 	__asm {
 		// backup EAX
 		push eax;
+
+		// don't set if EDI is null
+		test edi, edi
+		jz do_not_set;
+
 		// compare to the moviePath
 		mov eax, [esp + 000006A0h];
 		cmp eax, [setTheMoviePathExtendedCodeCompareAddress];
@@ -3076,9 +3084,7 @@ __declspec(naked) void setTheMoviePathExtendedCode101() {
 		pop ebx;
 
 		// null-terminate the string
-		// this used to be necessary but
-		// strncpy inherently does this for us now
-		//and [edi + eax], 00000000h
+		and [edi + eax], 00000000h
 
 		// set string length
 		mov bl, al;
@@ -3151,9 +3157,7 @@ __declspec(naked) void setTheMovieNameExtendedCode101() {
 		pop ecx;
 
 		// null-terminate the string
-		// this used to be necessary but
-		// strncpy inherently does this for us now
-		//and [esi + 00000001h + eax], 00000000h
+		and [esi + 00000001h + eax], 00000000h
 
 		// set string length
 		mov [esi], al;
@@ -3294,9 +3298,7 @@ __declspec(naked) void setTheMoviePathExtendedCode11() {
 		pop ebx;
 
 		// null-terminate the string
-		// this used to be necessary but
-		// strncpy inherently does this for us now
-		//and [edi + eax], 00000000h
+		and [edi + eax], 00000000h
 
 		// set string length
 		mov bl, al;
@@ -3377,9 +3379,7 @@ __declspec(naked) void setTheMovieNameExtendedCode11() {
 		pop ecx;
 
 		// null-terminate the string
-		// this used to be necessary but
-		// strncpy inherently does this for us now
-		//and [esi + 00000001h + eax], 00000000h
+		and [esi + 00000001h + eax], 00000000h
 
 		// set string length
 		mov [edi], al;
@@ -4413,9 +4413,7 @@ __declspec(naked) void setTheMoviePathExtendedCode1159() {
 		pop ebx;
 
 		// null-terminate the string
-		// this used to be necessary but
-		// strncpy inherently does this for us now
-		//and [edi + eax], 00000000h
+		and [edi + eax], 00000000h
 
 		// set string length
 		mov bl, al;
@@ -4496,9 +4494,7 @@ __declspec(naked) void setTheMovieNameExtendedCode1159() {
 		pop ecx;
 
 		// null-terminate the string
-		// this used to be necessary but
-		// strncpy inherently does this for us now
-		//and [esi + 00000001h + eax], 00000000h
+		and [esi + 00000001h + eax], 00000000h
 
 		// set string length
 		mov [edi], al;
@@ -4665,9 +4661,7 @@ __declspec(naked) void setTheMoviePathExtendedCode12() {
 		pop ebx;
 
 		// null-terminate the string
-		// this used to be necessary but
-		// strncpy inherently does this for us now
-		//and [edi + eax], 00000000h
+		and [edi + eax], 00000000h
 
 		// set string length
 		mov bl, al;
@@ -4751,9 +4745,7 @@ __declspec(naked) void setTheMovieNameExtendedCode12() {
 		pop ecx;
 
 		// null-terminate the string
-		// this used to be necessary but
-		// strncpy inherently does this for us now
-		//and [esi + 00000001h + eax], 00000000h
+		and [esi + 00000001h + eax], 00000000h
 
 		// set string length
 		mov [esi], al;
