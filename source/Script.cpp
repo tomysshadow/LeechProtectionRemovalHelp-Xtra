@@ -251,7 +251,7 @@ STDMETHODIMP TStdXtra_IMoaRegister::Register(PIMoaCache cacheInterfacePointer, P
 	// register the Method Table
 	const char* VER_MAJORVERSION_STRING = "1";
 	const char* VER_MINORVERSION_STRING = "5";
-	const char* VER_BUGFIXVERSION_STRING = "5";
+	const char* VER_BUGFIXVERSION_STRING = "6";
 
 	const size_t VERSION_STR_SIZE = 256;
 	char versionStr[VERSION_STR_SIZE] = "";
@@ -523,9 +523,9 @@ MoaError TStdXtra_IMoaMmXScript::XScrpSetExternalParam(PMoaDrCallInfo callPtr, M
 			}
 
 			// if the External Param Name equals an External Param Old Name
-			if (stringsEqual(name, externalParamOldName)) {
+			if (stringEquals(name, externalParamOldName)) {
 				// out with the old in with the new
-				if (!memoryShift(externalParamsSizeOld, externalParamsOld, externalParamsOld + externalParamsSizeOld - externalParamOldValue - externalParamOldValueSize, externalParamOldValue + externalParamOldValueSize, externalParamOldNameSize + externalParamOldValueSize, false)) {
+				if (!memoryShift(externalParamsOld, externalParamsSizeOld, externalParamOldValue + externalParamOldValueSize, externalParamsOld + externalParamsSizeOld - externalParamOldValue - externalParamOldValueSize, externalParamOldNameSize + externalParamOldValueSize, false)) {
 					// dangerous - memory is in unknown state, so quit
 					externalParamOldName = NULL;
 					externalParamOldValue = NULL;

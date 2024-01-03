@@ -14,8 +14,8 @@ LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 1,5,5,0
- PRODUCTVERSION 1,5,5,0
+ FILEVERSION 1,5,6,0
+ PRODUCTVERSION 1,5,6,0
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -32,12 +32,12 @@ BEGIN
         BEGIN
             VALUE "CompanyName", "TOMYSSHADOW"
             VALUE "FileDescription", "LeechProtectionRemovalHelp Xtra"
-            VALUE "FileVersion", "1.5.5.0"
+            VALUE "FileVersion", "1.5.6.0"
             VALUE "InternalName", "LeechProtectionRemovalHelp"
-            VALUE "LegalCopyright", "Copyright © Anthony Kleine 2022"
+            VALUE "LegalCopyright", "Copyright © Anthony Kleine 2024"
             VALUE "OriginalFilename", "LeechProtectionRemovalHelp.x32"
             VALUE "ProductName", "LeechProtectionRemovalHelp"
-            VALUE "ProductVersion", "1.5.5.0"
+            VALUE "ProductVersion", "1.5.6.0"
         END
     END
     BLOCK "VarFileInfo"
