@@ -75,11 +75,11 @@ EXTERN_END_DEFINE_CLASS_INTERFACE
 EXTERN_BEGIN_DEFINE_CLASS_INTERFACE(TStdXtra, IMoaMmXScript)
 	EXTERN_DEFINE_METHOD(MoaError, Call, (PMoaDrCallInfo))
 	private:
-	EXTERN_DEFINE_METHOD(MoaError, XScrpExtender, (PMoaDrCallInfo, MODULE, PIMoaDrMovie))
-	EXTERN_DEFINE_METHOD(MoaError, XScrpExtender, (PMoaDrCallInfo, MODULE))
-	EXTERN_DEFINE_METHOD(MoaError, XScrpExtender, (PMoaDrCallInfo, MODULE, PMoaLong))
-	EXTERN_DEFINE_METHOD(MoaError, XScrpExtender, (PMoaDrCallInfo, MODULE, MoaLong, PMoaChar))
-	EXTERN_DEFINE_METHOD(MoaError, XScrpSetExternalParam, (PMoaDrCallInfo, MODULE))
+	EXTERN_DEFINE_METHOD(MoaError, Extender, (PMoaDrCallInfo, MODULE, PIMoaDrMovie))
+	EXTERN_DEFINE_METHOD(MoaError, Extender, (PMoaDrCallInfo, MODULE))
+	EXTERN_DEFINE_METHOD(MoaError, Extender, (PMoaDrCallInfo, MODULE, PMoaLong))
+	EXTERN_DEFINE_METHOD(MoaError, Extender, (PMoaDrCallInfo, MODULE, MoaLong, PMoaChar))
+	EXTERN_DEFINE_METHOD(MoaError, SetExternalParam, (PMoaDrCallInfo, MODULE))
 EXTERN_END_DEFINE_CLASS_INTERFACE
 
 

@@ -227,65 +227,55 @@ STD_INTERFACE_CREATE_DESTROY(TStdXtra, IMoaRegister)
 BEGIN_DEFINE_CLASS_INTERFACE(TStdXtra, IMoaRegister)
 END_DEFINE_CLASS_INTERFACE
 
-// the IMoaRegister interface is expected
-// to implement a method called Register which
-// will be called by Director after it Queries for
-// this interface
-// Director will call this method and
-// pass in the arguments for it, which are
-// pointers that we can point to data
-// that will tell Director what this Xtra does
 STDMETHODIMP TStdXtra_IMoaRegister::Register(PIMoaCache cacheInterfacePointer, PIMoaXtraEntryDict xtraEntryDictInterfacePointer) {
-	PMoaVoid memStrPointer = NULL;
+	PMoaVoid memoryStringPointer = NULL;
 
 	moa_try
 
 	ThrowNull(cacheInterfacePointer);
 	ThrowNull(xtraEntryDictInterfacePointer);
 
-	// register the Lingo Xtra
-	PIMoaRegistryEntryDict registryEntryDictInterfacePointer = NULL;
-	ThrowErr(cacheInterfacePointer->AddRegistryEntry(xtraEntryDictInterfacePointer, &CLSID_TStdXtra, &IID_IMoaMmXScript, &registryEntryDictInterfacePointer));
-	ThrowNull(registryEntryDictInterfacePointer);
+	{
+		// this interface should NOT be released
+		PIMoaRegistryEntryDict registryEntryDictInterfacePointer = NULL;
+		ThrowErr(cacheInterfacePointer->AddRegistryEntry(xtraEntryDictInterfacePointer, &CLSID_TStdXtra, &IID_IMoaMmXScript, &registryEntryDictInterfacePointer));
+		ThrowNull(registryEntryDictInterfacePointer);
 
-	// register the Method Table
-	const char* VER_MAJORVERSION_STRING = "1";
-	const char* VER_MINORVERSION_STRING = "5";
-	const char* VER_BUGFIXVERSION_STRING = "6";
+		const char* VER_MAJORVERSION_STRING = "1";
+		const char* VER_MINORVERSION_STRING = "5";
+		const char* VER_BUGFIXVERSION_STRING = "6";
 
-	const size_t VERSION_STR_SIZE = 256;
-	char versionStr[VERSION_STR_SIZE] = "";
+		const size_t VERSION_STRING_SIZE = min(256, kMoaMmMaxXtraMessageTable);
+		char versionString[VERSION_STRING_SIZE] = "";
 
-	if (sprintf_s(versionStr, VERSION_STR_SIZE, versionInfo, VER_MAJORVERSION_STRING, VER_MINORVERSION_STRING, VER_BUGFIXVERSION_STRING) == -1) {
-		showLastError("Failed to Print String");
-		terminateCurrentProcess();
-		Throw(kMoaErr_OutOfMem);
+		if (sprintf_s(versionString, VERSION_STRING_SIZE, versionInfo, VER_MAJORVERSION_STRING, VER_MINORVERSION_STRING, VER_BUGFIXVERSION_STRING) == -1) {
+			Throw(kMoaErr_OutOfMem);
+		}
+
+		MoaUlong versionStringSize = stringSizeMax(versionString, VERSION_STRING_SIZE);
+		MoaUlong memoryStringSize = versionStringSize + strnlen_s(msgTable, kMoaMmMaxXtraMessageTable - versionStringSize);
+
+		memoryStringPointer = pObj->pCalloc->NRAlloc(memoryStringSize);
+		ThrowNull(memoryStringPointer);
+
+		if (strncpy_s((char*)memoryStringPointer, memoryStringSize, versionString, versionStringSize)) {
+			Throw(kMoaErr_OutOfMem);
+		}
+
+		if (strcat_s((char*)memoryStringPointer, memoryStringSize, msgTable)) {
+			Throw(kMoaErr_OutOfMem);
+		}
+
+		ThrowErr(registryEntryDictInterfacePointer->Put(kMoaDrDictType_MessageTable, memoryStringPointer, memoryStringSize, kMoaDrDictKey_MessageTable));
 	}
-
-	memStrPointer = pObj->pCalloc->NRAlloc(strlen(versionStr) + stringSize(msgTable));
-	ThrowNull(memStrPointer);
-
-	if (strcpy_s((char*)memStrPointer, stringSize(versionStr), versionStr)) {
-		showLastError("Failed to Copy String");
-		terminateCurrentProcess();
-		Throw(kMoaErr_OutOfMem);
-	}
-
-	if (strcat_s((char*)memStrPointer, strlen(versionStr) + stringSize(msgTable), msgTable)) {
-		showLastError("Failed to Concatenate String");
-		terminateCurrentProcess();
-		Throw(kMoaErr_OutOfMem);
-	}
-
-	ThrowErr(registryEntryDictInterfacePointer->Put(kMoaDrDictType_MessageTable, memStrPointer, 0, kMoaDrDictKey_MessageTable));
 
 	moa_catch
 	moa_catch_end
 
 	// always do this, whether there is an error or not
-	if (memStrPointer) {
-		pObj->pCalloc->NRFree(memStrPointer);
-		memStrPointer = NULL;
+	if (memoryStringPointer) {
+		pObj->pCalloc->NRFree(memoryStringPointer);
+		memoryStringPointer = NULL;
 	}
 
 	moa_try_end
@@ -327,53 +317,53 @@ STDMETHODIMP TStdXtra_IMoaMmXScript::Call(PMoaDrCallInfo callPtr) {
 	// switch statement with all the handlers that may be called - we arrive here from Lingo first
 	switch (callPtr->methodSelector) {
 		case m_setTheMoviePath:
-		ThrowErr(XScrpExtender(callPtr, MODULE_DIRECTOR_API, THE_MOVIE_PATH_SIZE, (PMoaChar)theMoviePath));
+		ThrowErr(Extender(callPtr, MODULE_DIRECTOR_API, THE_MOVIE_PATH_SIZE, (PMoaChar)theMoviePath));
 		break;
 		case m_setTheMovieName:
-		ThrowErr(XScrpExtender(callPtr, MODULE_DIRECTOR_API, THE_MOVIE_NAME_SIZE, (PMoaChar)theMovieName));
+		ThrowErr(Extender(callPtr, MODULE_DIRECTOR_API, THE_MOVIE_NAME_SIZE, (PMoaChar)theMovieName));
 		break;
 		case m_setTheEnvironment_shockMachine:
-		ThrowErr(XScrpExtender(callPtr, MODULE_DIRECTOR_API, &theEnvironment_shockMachine));
+		ThrowErr(Extender(callPtr, MODULE_DIRECTOR_API, &theEnvironment_shockMachine));
 		break;
 		case m_setTheEnvironment_shockMachineVersion:
-		ThrowErr(XScrpExtender(callPtr, MODULE_DIRECTOR_API, THE_ENVIRONMENT_SHOCK_MACHINE_VERSION_SIZE, (PMoaChar)theEnvironment_shockMachineVersion));
+		ThrowErr(Extender(callPtr, MODULE_DIRECTOR_API, THE_ENVIRONMENT_SHOCK_MACHINE_VERSION_SIZE, (PMoaChar)theEnvironment_shockMachineVersion));
 		break;
 		case m_setThePlatform:
-		ThrowErr(XScrpExtender(callPtr, MODULE_DIRECTOR_API, THE_PLATFORM_SIZE, (PMoaChar)thePlatform));
+		ThrowErr(Extender(callPtr, MODULE_DIRECTOR_API, THE_PLATFORM_SIZE, (PMoaChar)thePlatform));
 		break;
 		case m_setTheRunMode:
-		ThrowErr(XScrpExtender(callPtr, MODULE_DIRECTOR_API, THE_RUN_MODE_SIZE, (PMoaChar)theRunMode));
+		ThrowErr(Extender(callPtr, MODULE_DIRECTOR_API, THE_RUN_MODE_SIZE, (PMoaChar)theRunMode));
 		break;
 		case m_setTheEnvironment_productBuildVersion:
-		ThrowErr(XScrpExtender(callPtr, MODULE_DIRECTOR_API, THE_ENVIRONMENT_PRODUCT_BUILD_VERSION_SIZE, (PMoaChar)theEnvironment_productBuildVersion));
+		ThrowErr(Extender(callPtr, MODULE_DIRECTOR_API, THE_ENVIRONMENT_PRODUCT_BUILD_VERSION_SIZE, (PMoaChar)theEnvironment_productBuildVersion));
 		break;
 		case m_setTheProductVersion:
-		ThrowErr(XScrpExtender(callPtr, MODULE_DIRECTOR_API, THE_PRODUCT_VERSION_SIZE, (PMoaChar)theProductVersion));
+		ThrowErr(Extender(callPtr, MODULE_DIRECTOR_API, THE_PRODUCT_VERSION_SIZE, (PMoaChar)theProductVersion));
 		break;
 		case m_setTheEnvironment_osVersion:
-		ThrowErr(XScrpExtender(callPtr, MODULE_DIRECTOR_API, THE_ENVIRONMENT_OS_VERSION_SIZE, (PMoaChar)theEnvironment_osVersion));
+		ThrowErr(Extender(callPtr, MODULE_DIRECTOR_API, THE_ENVIRONMENT_OS_VERSION_SIZE, (PMoaChar)theEnvironment_osVersion));
 		break;
 		case m_setTheMachineType:
-		ThrowErr(XScrpExtender(callPtr, MODULE_DIRECTOR_API, &theMachineType));
+		ThrowErr(Extender(callPtr, MODULE_DIRECTOR_API, &theMachineType));
 		break;
 		case m_setExternalParam:
 		// this one requires a bit of fiddling with strings first
-		ThrowErr(XScrpSetExternalParam(callPtr, MODULE_DIRECTOR_API));
+		ThrowErr(SetExternalParam(callPtr, MODULE_DIRECTOR_API));
 		break;
 		case m_forceTheExitLock:
-		ThrowErr(XScrpExtender(callPtr, MODULE_DIRECTOR_API, &theExitLock));
+		ThrowErr(Extender(callPtr, MODULE_DIRECTOR_API, &theExitLock));
 		break;
 		case m_forceTheSafePlayer:
-		ThrowErr(XScrpExtender(callPtr, MODULE_DIRECTOR_API, &theSafePlayer));
+		ThrowErr(Extender(callPtr, MODULE_DIRECTOR_API, &theSafePlayer));
 		break;
 		case m_disableGoToNetMovie:
 		case m_disableGoToNetPage:
 		// these guys are in the NetLingo Xtra
-		ThrowErr(XScrpExtender(callPtr, MODULE_NET_LINGO_XTRA));
+		ThrowErr(Extender(callPtr, MODULE_NET_LINGO_XTRA));
 		break;
 		case m_bugfixShockwave3DBadDriverList:
 		// this one is in the Shockwave 3D Asset Xtra
-		ThrowErr(XScrpExtender(callPtr, MODULE_SHOCKWAVE_3D_ASSET_XTRA));
+		ThrowErr(Extender(callPtr, MODULE_SHOCKWAVE_3D_ASSET_XTRA));
 	}
 	moa_catch
 	moa_catch_end
@@ -389,7 +379,7 @@ STDMETHODIMP TStdXtra_IMoaMmXScript::Call(PMoaDrCallInfo callPtr) {
 // the Method Table being registered by
 // the Register method implemented by
 // the IMoaRegister interface
-MoaError TStdXtra_IMoaMmXScript::XScrpExtender(PMoaDrCallInfo callPtr, MODULE module, PIMoaDrMovie moaDrMovieInterfacePointer) {
+MoaError TStdXtra_IMoaMmXScript::Extender(PMoaDrCallInfo callPtr, MODULE module, PIMoaDrMovie moaDrMovieInterfacePointer) {
 	moa_try
 
 	ThrowNull(callPtr);
@@ -404,7 +394,7 @@ MoaError TStdXtra_IMoaMmXScript::XScrpExtender(PMoaDrCallInfo callPtr, MODULE mo
 	moa_try_end
 }
 
-MoaError TStdXtra_IMoaMmXScript::XScrpExtender(PMoaDrCallInfo callPtr, MODULE module) {
+MoaError TStdXtra_IMoaMmXScript::Extender(PMoaDrCallInfo callPtr, MODULE module) {
 	PIMoaDrMovie moaDrMovieInterfacePointer = NULL;
 
 	moa_try
@@ -414,7 +404,7 @@ MoaError TStdXtra_IMoaMmXScript::XScrpExtender(PMoaDrCallInfo callPtr, MODULE mo
 	// get the Active Movie (so we can call a Lingo Handler in it if we need to)
 	ThrowErr(pObj->moaDrPlayerInterfacePointer->GetActiveMovie(&moaDrMovieInterfacePointer));
 	
-	ThrowErr(XScrpExtender(callPtr, module, moaDrMovieInterfacePointer));
+	ThrowErr(Extender(callPtr, module, moaDrMovieInterfacePointer));
 
 	moa_catch
 	moa_catch_end
@@ -427,7 +417,7 @@ MoaError TStdXtra_IMoaMmXScript::XScrpExtender(PMoaDrCallInfo callPtr, MODULE mo
 	moa_try_end
 }
 
-MoaError TStdXtra_IMoaMmXScript::XScrpExtender(PMoaDrCallInfo callPtr, MODULE module, PMoaLong property) {
+MoaError TStdXtra_IMoaMmXScript::Extender(PMoaDrCallInfo callPtr, MODULE module, PMoaLong property) {
 	MoaMmValue argumentValue = kVoidMoaMmValueInitializer;
 
 	moa_try
@@ -439,14 +429,14 @@ MoaError TStdXtra_IMoaMmXScript::XScrpExtender(PMoaDrCallInfo callPtr, MODULE mo
 	AccessArgByIndex(1, &argumentValue);
 	ThrowErr(pObj->moaMmValueInterfacePointer->ValueToInteger(&argumentValue, property));
 
-	ThrowErr(XScrpExtender(callPtr, module));
+	ThrowErr(Extender(callPtr, module));
 
 	moa_catch
 	moa_catch_end
 	moa_try_end
 }
 
-MoaError TStdXtra_IMoaMmXScript::XScrpExtender(PMoaDrCallInfo callPtr, MODULE module, MoaLong propertySize, PMoaChar property) {
+MoaError TStdXtra_IMoaMmXScript::Extender(PMoaDrCallInfo callPtr, MODULE module, MoaLong propertySize, PMoaChar property) {
 	MoaMmValue argumentValue = kVoidMoaMmValueInitializer;
 
 	moa_try
@@ -460,14 +450,14 @@ MoaError TStdXtra_IMoaMmXScript::XScrpExtender(PMoaDrCallInfo callPtr, MODULE mo
 	// this is done by the extended code now
 	//*(unsigned char*)property = (unsigned char)strlen((char*)(property + 1));
 
-	ThrowErr(XScrpExtender(callPtr, module));
+	ThrowErr(Extender(callPtr, module));
 
 	moa_catch
 	moa_catch_end
 	moa_try_end
 }
 
-MoaError TStdXtra_IMoaMmXScript::XScrpSetExternalParam(PMoaDrCallInfo callPtr, MODULE module) {
+MoaError TStdXtra_IMoaMmXScript::SetExternalParam(PMoaDrCallInfo callPtr, MODULE module) {
 	PIMoaDrMovie moaDrMovieInterfacePointer = NULL;
 
 	MoaMmValue argumentValue = kVoidMoaMmValueInitializer;
@@ -593,7 +583,7 @@ MoaError TStdXtra_IMoaMmXScript::XScrpSetExternalParam(PMoaDrCallInfo callPtr, M
 	*(PMoaChar)(externalParams + externalParamsSize - 1) = NULL;
 	*(PMoaChar)(externalParams + externalParamsSize - 2) = NULL;
 
-	ThrowErr(XScrpExtender(callPtr, module, moaDrMovieInterfacePointer));
+	ThrowErr(Extender(callPtr, module, moaDrMovieInterfacePointer));
 
 	moa_catch
 	moa_catch_end
