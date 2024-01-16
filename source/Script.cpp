@@ -799,9 +799,6 @@ __declspec(naked) void setTheMoviePathExtendedCode8() {
 		// pop str
 		pop ebx;
 
-		// null-terminate the string
-		//and [edi + eax], 00h
-
 		// set string length
 		mov bl, al;
 		// pop num
@@ -874,9 +871,6 @@ __declspec(naked) void setTheMovieNameExtendedCode8() {
 		call strlen;
 		// pop str
 		pop ecx;
-
-		// null-terminate the string
-		//and [edi + eax], 00h
 
 		// set string length
 		mov [edi], al;
@@ -1418,9 +1412,6 @@ __declspec(naked) void setTheMoviePathExtendedCode85() {
 		// pop str
 		pop ebx;
 
-		// null-terminate the string
-		//and [edi + eax], 00h
-
 		// set string length
 		mov bl, al;
 		// pop num
@@ -1484,9 +1475,6 @@ __declspec(naked) void setTheMovieNameExtendedCode85() {
 		call strlen;
 		// pop str
 		pop ecx;
-
-		// null-terminate the string
-		//and [esi + 00000001h + eax], 00h
 
 		// set string length
 		mov [esi], al;
@@ -2140,9 +2128,6 @@ __declspec(naked) void setTheMoviePathExtendedCode10() {
 		// pop str
 		pop ebx;
 
-		// null-terminate the string
-		//and [edi + eax], 00h
-
 		// set string length
 		mov bl, al;
 		// pop num
@@ -2213,9 +2198,6 @@ __declspec(naked) void setTheMovieNameExtendedCode10() {
 		call strlen;
 		// pop str
 		pop ecx;
-
-		// null-terminate the string
-		//and [esi + 00000001h + eax], 00h
 
 		// set string length
 		mov [esi], al;
@@ -2783,9 +2765,6 @@ __declspec(naked) void setTheMoviePathExtendedCode101() {
 		// pop str
 		pop ebx;
 
-		// null-terminate the string
-		//and [edi + eax], 00h
-
 		// set string length
 		mov bl, al;
 		// pop num
@@ -2855,9 +2834,6 @@ __declspec(naked) void setTheMovieNameExtendedCode101() {
 		call strlen;
 		// pop str
 		pop ecx;
-
-		// null-terminate the string
-		//and [esi + 00000001h + eax], 00h
 
 		// set string length
 		mov [esi], al;
@@ -2997,9 +2973,6 @@ __declspec(naked) void setTheMoviePathExtendedCode11() {
 		// pop str
 		pop ebx;
 
-		// null-terminate the string
-		//and [edi + eax], 00h
-
 		// set string length
 		mov bl, al;
 		// pop num
@@ -3077,9 +3050,6 @@ __declspec(naked) void setTheMovieNameExtendedCode11() {
 		call strlen;
 		// pop str
 		pop ecx;
-
-		// null-terminate the string
-		//and [esi + 00000001h + eax], 00h
 
 		// set string length
 		mov [edi], al;
@@ -3892,9 +3862,6 @@ __declspec(naked) void setTheMoviePathExtendedCode1159() {
 		// pop str
 		pop ebx;
 
-		// null-terminate the string
-		//and [edi + eax], 00h
-
 		// set string length
 		mov bl, al;
 		// pop num
@@ -3972,9 +3939,6 @@ __declspec(naked) void setTheMovieNameExtendedCode1159() {
 		call strlen;
 		// pop str
 		pop ecx;
-
-		// null-terminate the string
-		//and [esi + 00000001h + eax], 00h
 
 		// set string length
 		mov [edi], al;
@@ -4140,9 +4104,6 @@ __declspec(naked) void setTheMoviePathExtendedCode12() {
 		// pop str
 		pop ebx;
 
-		// null-terminate the string
-		//and [edi + eax], 00h
-
 		// set string length
 		mov bl, al;
 		// pop num
@@ -4223,9 +4184,6 @@ __declspec(naked) void setTheMovieNameExtendedCode12() {
 		call strlen;
 		// pop str
 		pop ecx;
-
-		// null-terminate the string
-		//and [esi + 00000001h + eax], 00h
 
 		// set string length
 		mov [esi], al;
