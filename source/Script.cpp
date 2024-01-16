@@ -1033,10 +1033,15 @@ __declspec(naked) void setTheRunModeExtendedCode8() {
 
 __declspec(naked) void setTheEnvironment_runModeExtendedCode8() {
 	__asm {
+		// compare to the environment.runMode
+		mov eax, [esp + 0000022Ch];
+		cmp eax, [theEnvironmentCompareAddress];
+		jnz do_not_set;
+
 		lea eax, [esp + 00000024h];
 
 		// copy the string
-		push [THE_RUN_MODE_SIZE]; // num
+		push[THE_RUN_MODE_SIZE]; // num
 		lea edx, [theRunMode];
 		push edx; // source
 		push eax; // destination
@@ -1044,9 +1049,14 @@ __declspec(naked) void setTheEnvironment_runModeExtendedCode8() {
 		pop eax;
 		pop edx;
 		pop edx;
+		jmp epilogue;
 
+		do_not_set:
+		lea eax, [esp + 00000024h];
+
+		epilogue:
 		lea edx, [esp + 00000010h];
-		jmp [setTheEnvironment_runModeExtendedCodeReturnAddress];
+		jmp[setTheEnvironment_runModeExtendedCodeReturnAddress];
 	}
 }
 
@@ -1651,10 +1661,19 @@ __declspec(naked) void setTheRunModeExtendedCode85() {
 
 __declspec(naked) void setTheEnvironment_runModeExtendedCode85() {
 	__asm {
+		// backup EAX
+		push eax;
+		// compare to the environment.runMode
+		mov eax, [esp + 00000334h];
+		cmp eax, [theEnvironmentCompareAddress];
+		jnz do_not_set;
+
+		// restore EAX
+		pop eax;
 		push ecx;
 
 		// copy the string
-		push [THE_RUN_MODE_SIZE]; // num
+		push[THE_RUN_MODE_SIZE]; // num
 		lea ecx, [theRunMode];
 		push ecx; // source
 		push eax; // destination
@@ -1663,11 +1682,17 @@ __declspec(naked) void setTheEnvironment_runModeExtendedCode85() {
 		pop eax;
 		pop eax;
 		pop ecx;
+		jmp epilogue;
 
+		do_not_set:
+		// restore EAX
+		pop eax;
+
+		epilogue:
 		lea eax, [ebp - 00000008h];
 		push eax;
 		lea eax, [ebp - 00000118h];
-		jmp [setTheEnvironment_runModeExtendedCodeReturnAddress];
+		jmp[setTheEnvironment_runModeExtendedCodeReturnAddress];
 	}
 }
 
@@ -1732,8 +1757,13 @@ __declspec(naked) void setTheProductVersionExtendedCode85() {
 
 __declspec(naked) void setTheEnvironment_productVersionExtendedCode85() {
 	__asm {
+		// compare to the environment.productVersion
+		mov eax, [esp + 00000330h];
+		cmp eax, [theEnvironmentCompareAddress];
+		jnz epilogue;
+
 		// copy the string
-		push [THE_PRODUCT_VERSION_SIZE]; // num
+		push[THE_PRODUCT_VERSION_SIZE]; // num
 		lea eax, [theProductVersion];
 		push eax; // source
 		lea eax, [ebp - 00000118h];
@@ -1746,10 +1776,11 @@ __declspec(naked) void setTheEnvironment_productVersionExtendedCode85() {
 		// pop num
 		pop eax;
 
+		epilogue:
 		lea eax, [ebp - 00000008h];
 		push eax;
 		lea eax, [ebp - 00000118h];
-		jmp [setTheEnvironment_productVersionExtendedCodeReturnAddress];
+		jmp[setTheEnvironment_productVersionExtendedCodeReturnAddress];
 	}
 }
 
@@ -2407,10 +2438,19 @@ __declspec(naked) void setTheRunModeExtendedCode10() {
 
 __declspec(naked) void setTheEnvironment_runModeExtendedCode10() {
 	__asm {
+		// backup EAX
+		push eax;
+		// compare to the environment.runMode
+		mov eax, [esp + 00000334h];
+		cmp eax, [theEnvironmentCompareAddress];
+		jnz do_not_set;
+
+		// restore EAX
+		pop eax;
 		push ecx;
 
 		// copy the string
-		push [THE_RUN_MODE_SIZE]; // num
+		push[THE_RUN_MODE_SIZE]; // num
 		lea ecx, [theRunMode];
 		push ecx; // source
 		push eax; // destination
@@ -2419,11 +2459,17 @@ __declspec(naked) void setTheEnvironment_runModeExtendedCode10() {
 		pop eax;
 		pop eax;
 		pop ecx;
+		jmp epilogue;
 
+		do_not_set:
+		// restore EAX
+		pop eax;
+
+		epilogue:
 		lea eax, [ebp - 00000008h];
 		push eax;
 		lea eax, [ebp - 00000118h];
-		jmp [setTheEnvironment_runModeExtendedCodeReturnAddress];
+		jmp[setTheEnvironment_runModeExtendedCodeReturnAddress];
 	}
 }
 
@@ -3182,9 +3228,30 @@ __declspec(naked) void setTheEnvironment_shockMachineExtendedCode11() {
 	__asm {
 		lea ecx, [esp + 0000000Ch];
 		push ecx;
+		// backup EAX
+		push eax;
+		// compare to the environment.shockMachine
+		mov eax, [esp + 00000930h];
+		cmp eax, [theEnvironmentCompareAddress];
+		jnz compare_to_the_environment_shockmachine_odd;
+		jmp set;
 
-		push [theEnvironment_shockMachine];
-		jmp [setTheEnvironment_shockMachineExtendedCodeReturnAddress];
+		compare_to_the_environment_shockmachine_odd:
+		mov eax, [esp + 0000092Ch];
+		cmp eax, [theEnvironmentCompareAddress];
+		jnz do_not_set;
+
+		set:
+		// restore EAX
+		pop eax;
+		push[theEnvironment_shockMachine];
+		jmp[setTheEnvironment_shockMachineExtendedCodeReturnAddress];
+
+		do_not_set:
+		// restore EAX
+		pop eax;
+		push 0;
+		jmp[setTheEnvironment_shockMachineExtendedCodeReturnAddress];
 	}
 }
 
@@ -3316,8 +3383,25 @@ __declspec(naked) void setTheRunModeExtendedCode11() {
 
 __declspec(naked) void setTheEnvironment_runModeExtendedCode11() {
 	__asm {
+		// backup EAX
+		push eax;
+		// compare to the environment.runMode
+		mov eax, [esp + 0000092Ch];
+		cmp eax, [theEnvironmentCompareAddress];
+		jnz compare_to_the_environment_runmode_odd;
+		jmp set;
+
+		compare_to_the_environment_runmode_odd:
+		mov eax, [esp + 00000928h];
+		cmp eax, [theEnvironmentCompareAddress];
+		jnz do_not_set;
+
+		set:
+		// restore EAX
+		pop eax;
+
 		// copy the string
-		push [THE_RUN_MODE_SIZE]; // num
+		push[THE_RUN_MODE_SIZE]; // num
 		lea edx, [theRunMode];
 		push edx; // source
 		push eax; // destination
@@ -3325,11 +3409,17 @@ __declspec(naked) void setTheEnvironment_runModeExtendedCode11() {
 		pop eax;
 		pop eax;
 		pop eax;
+		jmp epilogue;
 
+		do_not_set:
+		// restore EAX
+		pop eax;
+
+		epilogue:
 		lea edx, [esp + 0000000Ch];
 		push edx;
 		lea eax, [esp + 00000024h];
-		jmp [setTheEnvironment_runModeExtendedCodeReturnAddress];
+		jmp[setTheEnvironment_runModeExtendedCodeReturnAddress];
 	}
 }
 
@@ -4339,9 +4429,23 @@ __declspec(naked) void setTheEnvironment_shockMachineExtendedCode12() {
 	__asm {
 		lea edx, [ebp - 0000090Ch];
 		push edx;
+		// backup EAX
+		push eax;
+		// compare to the environment.shockMachine
+		mov eax, [esp + 0000092Ch];
+		cmp eax, [theEnvironmentCompareAddress];
+		jnz do_not_set;
 
-		push [theEnvironment_shockMachine];
-		jmp [setTheEnvironment_shockMachineExtendedCodeReturnAddress];
+		// restore EAX
+		pop eax;
+		push[theEnvironment_shockMachine];
+		jmp[setTheEnvironment_shockMachineExtendedCodeReturnAddress];
+
+		do_not_set:
+		// restore EAX
+		pop eax;
+		push 0;
+		jmp[setTheEnvironment_shockMachineExtendedCodeReturnAddress];
 	}
 }
 
@@ -4469,8 +4573,18 @@ __declspec(naked) void setTheRunModeExtendedCode12() {
 
 __declspec(naked) void setTheEnvironment_runModeExtendedCode12() {
 	__asm {
+		// backup EAX
+		push eax;
+		// compare to the environment.runMode
+		mov eax, [esp + 00000928h];
+		cmp eax, [theEnvironmentCompareAddress];
+		jnz do_not_set;
+
+		// restore EAX
+		pop eax;
+
 		// copy the string
-		push [THE_RUN_MODE_SIZE]; // num
+		push[THE_RUN_MODE_SIZE]; // num
 		lea edx, [theRunMode];
 		push edx; // source
 		push eax; // destination
@@ -4478,11 +4592,17 @@ __declspec(naked) void setTheEnvironment_runModeExtendedCode12() {
 		pop eax;
 		pop eax;
 		pop eax;
+		jmp epilogue;
 
+		do_not_set:
+		// restore EAX
+		pop eax;
+
+		epilogue:
 		lea eax, [ebp - 0000090Ch];
 		push eax;
 		lea ecx, [ebp - 00000404h];
-		jmp [setTheEnvironment_runModeExtendedCodeReturnAddress];
+		jmp[setTheEnvironment_runModeExtendedCodeReturnAddress];
 	}
 }
 
@@ -5061,10 +5181,12 @@ bool extender(MoaMmSymbol methodSelector, MODULE module, PIMoaDrMovie moaDrMovie
 				break;
 				case m_setTheEnvironment_shockMachine:
 				setTheEnvironment_shockMachineExtendedCodeReturnAddress = makeExtendedCodeAddress(moduleHandle, 0x000C56D0);
+				theEnvironmentCompareAddress = makeExtendedCodeAddress(moduleHandle, 0x000C272A);
 				codeExtended = extendCode(moduleHandle, 0x000C56C9, setTheEnvironment_shockMachineExtendedCode8);
 				break;
 				case m_setTheEnvironment_shockMachineVersion:
 				setTheEnvironment_shockMachineVersionExtendedCodeReturnAddress = makeExtendedCodeAddress(moduleHandle, 0x000C572B);
+				theEnvironmentCompareAddress = makeExtendedCodeAddress(moduleHandle, 0x000C272A);
 				codeExtended = extendCode(moduleHandle, 0x000C5720, setTheEnvironment_shockMachineVersionExtendedCode8);
 				break;
 				case m_setThePlatform:
@@ -5077,6 +5199,7 @@ bool extender(MoaMmSymbol methodSelector, MODULE module, PIMoaDrMovie moaDrMovie
 				case m_setTheRunMode:
 				setTheRunModeTheProductVersionExtendedCodeCompareAddress = makeExtendedCodeAddress(moduleHandle, 0x000C1DE1);
 				setTheEnvironment_runModeExtendedCodeReturnAddress = makeExtendedCodeAddress(moduleHandle, 0x000C57C8);
+				theEnvironmentCompareAddress = makeExtendedCodeAddress(moduleHandle, 0x000C272A);
 				lingoCallCompareAddress = makeExtendedCodeAddress(moduleHandle, 0x000EEC9F);
 
 				if (!extendCode(moduleHandle, 0x000465B9, setTheRunModeExtendedCode8)) {
@@ -5192,6 +5315,7 @@ bool extender(MoaMmSymbol methodSelector, MODULE module, PIMoaDrMovie moaDrMovie
 				case m_setTheRunMode:
 				setTheRunModeTheProductVersionExtendedCodeCompareAddress = makeExtendedCodeAddress(moduleHandle, 0x000A9D11);
 				setTheEnvironment_runModeExtendedCodeReturnAddress = makeExtendedCodeAddress(moduleHandle, 0x000AC2A3);
+				theEnvironmentCompareAddress = makeExtendedCodeAddress(moduleHandle, 0x000AA244);
 				lingoCallCompareAddress = makeExtendedCodeAddress(moduleHandle, 0x000C9E6A);
 
 				if (!extendCode(moduleHandle, 0x0003B8A8, setTheRunModeExtendedCode85)) {
@@ -5314,6 +5438,7 @@ bool extender(MoaMmSymbol methodSelector, MODULE module, PIMoaDrMovie moaDrMovie
 				case m_setTheRunMode:
 				setTheRunModeTheProductVersionExtendedCodeCompareAddress = makeExtendedCodeAddress(moduleHandle, 0x000A9D77);
 				setTheEnvironment_runModeExtendedCodeReturnAddress = makeExtendedCodeAddress(moduleHandle, 0x000AC317);
+				theEnvironmentCompareAddress = makeExtendedCodeAddress(moduleHandle, 0x000AA2AA);
 				lingoCallCompareAddress = makeExtendedCodeAddress(moduleHandle, 0x000C9EEA);
 
 				if (!extendCode(moduleHandle, 0x0003B8D9, setTheRunModeExtendedCode851)) {
@@ -5436,6 +5561,7 @@ bool extender(MoaMmSymbol methodSelector, MODULE module, PIMoaDrMovie moaDrMovie
 				case m_setTheRunMode:
 				setTheRunModeTheProductVersionExtendedCodeCompareAddress = makeExtendedCodeAddress(moduleHandle, 0x000CE531);
 				setTheEnvironment_runModeExtendedCodeReturnAddress = makeExtendedCodeAddress(moduleHandle, 0x000D0AE7);
+				theEnvironmentCompareAddress = makeExtendedCodeAddress(moduleHandle, 0x000CEA64);
 				lingoCallCompareAddress = makeExtendedCodeAddress(moduleHandle, 0x000BE3CA);
 
 				if (!extendCode(moduleHandle, 0x0003B8E8, setTheRunModeExtendedCode9)) {
@@ -5560,6 +5686,7 @@ bool extender(MoaMmSymbol methodSelector, MODULE module, PIMoaDrMovie moaDrMovie
 				case m_setTheRunMode:
 				setTheRunModeTheProductVersionExtendedCodeCompareAddress = makeExtendedCodeAddress(moduleHandle, 0x000AD760);
 				setTheEnvironment_runModeExtendedCodeReturnAddress = makeExtendedCodeAddress(moduleHandle, 0x000B19DD);
+				theEnvironmentCompareAddress = makeExtendedCodeAddress(moduleHandle, 0x000AF1D0);
 				lingoCallCompareAddress = makeExtendedCodeAddress(moduleHandle, 0x000D7059);
 				lingoCallCompareAddress3 = makeExtendedCodeAddress(moduleHandle, 0x000D712F);
 
@@ -5686,6 +5813,7 @@ bool extender(MoaMmSymbol methodSelector, MODULE module, PIMoaDrMovie moaDrMovie
 				case m_setTheRunMode:
 				setTheRunModeTheProductVersionExtendedCodeCompareAddress = makeExtendedCodeAddress(moduleHandle, 0x000AEA87);
 				setTheEnvironment_runModeExtendedCodeReturnAddress = makeExtendedCodeAddress(moduleHandle, 0x000B2D30);
+				theEnvironmentCompareAddress = makeExtendedCodeAddress(moduleHandle, 0x000B0534);
 				lingoCallCompareAddress = makeExtendedCodeAddress(moduleHandle, 0x000D8449);
 				lingoCallCompareAddress3 = makeExtendedCodeAddress(moduleHandle, 0x000D851F);
 
@@ -5812,6 +5940,7 @@ bool extender(MoaMmSymbol methodSelector, MODULE module, PIMoaDrMovie moaDrMovie
 				case m_setTheRunMode:
 				setTheRunModeTheProductVersionExtendedCodeCompareAddress = makeExtendedCodeAddress(moduleHandle, 0x000AEE7E);
 				setTheEnvironment_runModeExtendedCodeReturnAddress = makeExtendedCodeAddress(moduleHandle, 0x000B313C);
+				theEnvironmentCompareAddress = makeExtendedCodeAddress(moduleHandle, 0x000B092B);
 				lingoCallCompareAddress = makeExtendedCodeAddress(moduleHandle, 0x000D87F9);
 				lingoCallCompareAddress3 = makeExtendedCodeAddress(moduleHandle, 0x000D88CF);
 
@@ -5938,6 +6067,7 @@ bool extender(MoaMmSymbol methodSelector, MODULE module, PIMoaDrMovie moaDrMovie
 				case m_setTheRunMode:
 				setTheRunModeTheProductVersionExtendedCodeCompareAddress = makeExtendedCodeAddress(moduleHandle, 0x000DBC62);
 				setTheEnvironment_runModeExtendedCodeReturnAddress = makeExtendedCodeAddress(moduleHandle, 0x000D9CED);
+				theEnvironmentCompareAddress = makeExtendedCodeAddress(moduleHandle, 0x000DA83A);
 				lingoCallCompareAddress = makeExtendedCodeAddress(moduleHandle, 0x001103ED);
 				lingoCallCompareAddress3 = makeExtendedCodeAddress(moduleHandle, 0x001104BB);
 
@@ -6064,6 +6194,7 @@ bool extender(MoaMmSymbol methodSelector, MODULE module, PIMoaDrMovie moaDrMovie
 				case m_setTheRunMode:
 				setTheRunModeTheProductVersionExtendedCodeCompareAddress = makeExtendedCodeAddress(moduleHandle, 0x000DBBF2);
 				setTheEnvironment_runModeExtendedCodeReturnAddress = makeExtendedCodeAddress(moduleHandle, 0x000D9C7D);
+				theEnvironmentCompareAddress = makeExtendedCodeAddress(moduleHandle, 0x000DA7CA);
 				lingoCallCompareAddress = makeExtendedCodeAddress(moduleHandle, 0x0011037D);
 				lingoCallCompareAddress3 = makeExtendedCodeAddress(moduleHandle, 0x0011044B);
 
@@ -6190,6 +6321,7 @@ bool extender(MoaMmSymbol methodSelector, MODULE module, PIMoaDrMovie moaDrMovie
 				case m_setTheRunMode:
 				setTheRunModeTheProductVersionExtendedCodeCompareAddress = makeExtendedCodeAddress(moduleHandle, 0x000DDDA2);
 				setTheEnvironment_runModeExtendedCodeReturnAddress = makeExtendedCodeAddress(moduleHandle, 0x000DBE2D);
+				theEnvironmentCompareAddress = makeExtendedCodeAddress(moduleHandle, 0x000DC97A);
 				lingoCallCompareAddress = makeExtendedCodeAddress(moduleHandle, 0x00112FDD);
 				lingoCallCompareAddress3 = makeExtendedCodeAddress(moduleHandle, 0x001130AB);
 
@@ -6316,6 +6448,7 @@ bool extender(MoaMmSymbol methodSelector, MODULE module, PIMoaDrMovie moaDrMovie
 				case m_setTheRunMode:
 				setTheRunModeTheProductVersionExtendedCodeCompareAddress = makeExtendedCodeAddress(moduleHandle, 0x000DE822);
 				setTheEnvironment_runModeExtendedCodeReturnAddress = makeExtendedCodeAddress(moduleHandle, 0x000DC8AD);
+				theEnvironmentCompareAddress = makeExtendedCodeAddress(moduleHandle, 0x000DD3FA);
 				lingoCallCompareAddress = makeExtendedCodeAddress(moduleHandle, 0x00113BA7);
 				lingoCallCompareAddress3 = makeExtendedCodeAddress(moduleHandle, 0x00113C75);
 
@@ -6442,6 +6575,7 @@ bool extender(MoaMmSymbol methodSelector, MODULE module, PIMoaDrMovie moaDrMovie
 				case m_setTheRunMode:
 				setTheRunModeTheProductVersionExtendedCodeCompareAddress = makeExtendedCodeAddress(moduleHandle, 0x000DF9D2);
 				setTheEnvironment_runModeExtendedCodeReturnAddress = makeExtendedCodeAddress(moduleHandle, 0x000DD92D);
+				theEnvironmentCompareAddress = makeExtendedCodeAddress(moduleHandle, 0x000DE47A);
 				lingoCallCompareAddress = makeExtendedCodeAddress(moduleHandle, 0x001161ED);
 				lingoCallCompareAddress3 = makeExtendedCodeAddress(moduleHandle, 0x001162BB);
 
@@ -6570,6 +6704,7 @@ bool extender(MoaMmSymbol methodSelector, MODULE module, PIMoaDrMovie moaDrMovie
 				case m_setTheRunMode:
 				setTheRunModeTheProductVersionExtendedCodeCompareAddress = makeExtendedCodeAddress(moduleHandle, 0x000121B9);
 				setTheEnvironment_runModeExtendedCodeReturnAddress = makeExtendedCodeAddress(moduleHandle, 0x0000FC53);
+				theEnvironmentCompareAddress = makeExtendedCodeAddress(moduleHandle, 0x00010AA5);
 				lingoCallCompareAddress = makeExtendedCodeAddress(moduleHandle, 0x000363FC);
 				lingoCallCompareAddress3 = makeExtendedCodeAddress(moduleHandle, 0x000364BC);
 				exceptionHandlerSubroutineAddress = makeExtendedCodeAddress(moduleHandle, 0x00001762);
