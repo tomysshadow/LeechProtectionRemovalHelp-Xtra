@@ -901,14 +901,38 @@ __declspec(naked) void setTheMovieNameExtendedCode8() {
 
 __declspec(naked) void setTheEnvironment_shockMachineExtendedCode8() {
 	__asm {
+		// backup EAX
+		push eax;
+		// compare to the environment.shockMachine
+		mov eax, [esp + 00000230h];
+		cmp eax, [theEnvironmentCompareAddress];
+		jnz do_not_set;
+
+		// restore EAX
+		pop eax;
 		mov ebx, [theEnvironment_shockMachine];
-		jmp [setTheEnvironment_shockMachineExtendedCodeReturnAddress];
+		jmp[setTheEnvironment_shockMachineExtendedCodeReturnAddress];
+
+		do_not_set:
+		// restore EAX
+		pop eax;
+		test eax, eax;
+		jz epilogue;
+		mov ebx, [eax + 00000028h];
+
+		epilogue:
+		jmp[setTheEnvironment_shockMachineExtendedCodeReturnAddress];
 	}
 }
 
 __declspec(naked) void setTheEnvironment_shockMachineVersionExtendedCode8() {
 	__asm {
-		push [THE_ENVIRONMENT_SHOCK_MACHINE_VERSION_SIZE]; // num
+		// compare to the environment.shockMachineVersion
+		mov eax, [esp + 0000022Ch];
+		cmp eax, [theEnvironmentCompareAddress];
+		jnz epilogue;
+
+		push[THE_ENVIRONMENT_SHOCK_MACHINE_VERSION_SIZE]; // num
 		lea eax, [theEnvironment_shockMachineVersion];
 		push eax; // source/str
 		lea eax, [esp + 00000134h];
@@ -919,9 +943,10 @@ __declspec(naked) void setTheEnvironment_shockMachineVersionExtendedCode8() {
 		pop eax;
 		pop eax;
 
+		epilogue:
 		lea edx, [esp + 00000010h];
 		lea eax, [esp + 0000012Ch];
-		jmp [setTheEnvironment_shockMachineVersionExtendedCodeReturnAddress];
+		jmp[setTheEnvironment_shockMachineVersionExtendedCodeReturnAddress];
 	}
 }
 
@@ -1493,14 +1518,39 @@ __declspec(naked) void setTheMovieNameExtendedCode85() {
 
 __declspec(naked) void setTheEnvironment_shockMachineExtendedCode85() {
 	__asm {
+		// backup EAX
+		push eax;
+		// compare to the environment.shockMachine
+		mov eax, [esp + 00000334h];
+		cmp eax, [theEnvironmentCompareAddress];
+		jnz do_not_set;
+
+		// restore EAX
+		pop eax;
 		mov eax, [theEnvironment_shockMachine];
-		jmp [setTheEnvironment_shockMachineExtendedCodeReturnAddress];
+		jmp[setTheEnvironment_shockMachineExtendedCodeReturnAddress];
+
+		do_not_set:
+		// restore EAX
+		pop eax;
+		test eax, eax;
+		jz set_zero;
+		mov eax, [eax + 00000028h];
+		jmp[setTheEnvironment_shockMachineExtendedCodeReturnAddress];
+		set_zero:
+		mov eax, [ebp + 0000000Ch];
+		jmp[setTheEnvironment_shockMachineExtendedCodeReturnAddress];
 	}
 }
 
 __declspec(naked) void setTheEnvironment_shockMachineVersionExtendedCode85() {
 	__asm {
-		push [THE_ENVIRONMENT_SHOCK_MACHINE_VERSION_SIZE]; // num
+		// compare to the environment.shockMachineVersion
+		mov eax, [esp + 00000330h];
+		cmp eax, [theEnvironmentCompareAddress];
+		jnz epilogue;
+
+		push[THE_ENVIRONMENT_SHOCK_MACHINE_VERSION_SIZE]; // num
 		lea eax, [theEnvironment_shockMachineVersion];
 		push eax; // source/str
 		lea eax, [ebp - 00000218h];
@@ -1511,10 +1561,11 @@ __declspec(naked) void setTheEnvironment_shockMachineVersionExtendedCode85() {
 		pop eax;
 		pop eax;
 
+		epilogue:
 		lea eax, [ebp - 00000008h];
 		push eax;
 		lea eax, [ebp - 00000218h];
-		jmp [setTheEnvironment_shockMachineVersionExtendedCodeReturnAddress];
+		jmp[setTheEnvironment_shockMachineVersionExtendedCodeReturnAddress];
 	}
 }
 
@@ -2214,9 +2265,58 @@ __declspec(naked) void setTheMovieNameExtendedCode10() {
 	}
 }
 
-#define setTheEnvironment_shockMachineExtendedCode10 setTheEnvironment_shockMachineExtendedCode85
+__declspec(naked) void setTheEnvironment_shockMachineExtendedCode10() {
+	__asm {
+		// backup EAX
+		push eax;
+		// compare to the environment.shockMachine
+		mov eax, [esp + 00000334h];
+		cmp eax, [theEnvironmentCompareAddress];
+		jnz do_not_set;
 
-#define setTheEnvironment_shockMachineVersionExtendedCode10 setTheEnvironment_shockMachineVersionExtendedCode85
+		// restore EAX
+		pop eax;
+		mov eax, [theEnvironment_shockMachine];
+		jmp[setTheEnvironment_shockMachineExtendedCodeReturnAddress];
+
+		do_not_set:
+		// restore EAX
+		pop eax;
+		test eax, eax;
+		jz set_zero;
+		mov eax, [eax + 00000028h];
+		jmp[setTheEnvironment_shockMachineExtendedCodeReturnAddress];
+		set_zero:
+		mov eax, [ebp + 0000000Ch];
+		jmp[setTheEnvironment_shockMachineExtendedCodeReturnAddress];
+	}
+}
+
+__declspec(naked) void setTheEnvironment_shockMachineVersionExtendedCode10() {
+	__asm {
+		// compare to the environment.shockMachineVersion
+		mov eax, [esp + 00000330h];
+		cmp eax, [theEnvironmentCompareAddress];
+		jnz epilogue;
+
+		push[THE_ENVIRONMENT_SHOCK_MACHINE_VERSION_SIZE]; // num
+		lea eax, [theEnvironment_shockMachineVersion];
+		push eax; // source/str
+		lea eax, [ebp - 00000218h];
+		push eax; // destination
+		call strncpy;
+		// strncpy's calling convention means we need to now pop these things ourselves
+		pop eax;
+		pop eax;
+		pop eax;
+
+		epilogue:
+		lea eax, [ebp - 00000008h];
+		push eax;
+		lea eax, [ebp - 00000218h];
+		jmp[setTheEnvironment_shockMachineVersionExtendedCodeReturnAddress];
+	}
+}
 
 __declspec(naked) void setThePlatformExtendedCode10() {
 	__asm {
@@ -3090,7 +3190,21 @@ __declspec(naked) void setTheEnvironment_shockMachineExtendedCode11() {
 
 __declspec(naked) void setTheEnvironment_shockMachineVersionExtendedCode11() {
 	__asm {
-		push [THE_ENVIRONMENT_SHOCK_MACHINE_VERSION_SIZE]; // num
+		// backup EAX
+		push eax;
+		// compare to the environment.shockMachineVersion
+		mov eax, [esp + 00000938h];
+		cmp eax, [theEnvironmentCompareAddress];
+		jnz compare_to_the_environment_shockmachineversion_odd;
+		jmp set;
+
+		compare_to_the_environment_shockmachineversion_odd:
+		mov eax, [esp + 00000934h];
+		cmp eax, [theEnvironmentCompareAddress];
+		jnz do_not_set;
+
+		set:
+		push[THE_ENVIRONMENT_SHOCK_MACHINE_VERSION_SIZE]; // num
 		lea eax, [theEnvironment_shockMachineVersion];
 		push eax; // source/str
 		lea eax, [esp + 00000438h];
@@ -3100,10 +3214,15 @@ __declspec(naked) void setTheEnvironment_shockMachineVersionExtendedCode11() {
 		pop eax;
 		pop eax;
 		pop eax;
+		jmp epilogue;
 
+		do_not_set:
+		mov[esp + 00000430h], 00000000h;
+
+		epilogue:
 		// restore EAX
 		pop eax;
-		jmp [setTheEnvironment_shockMachineVersionExtendedCodeReturnAddress];
+		jmp[setTheEnvironment_shockMachineVersionExtendedCodeReturnAddress];
 	}
 }
 
@@ -4228,7 +4347,14 @@ __declspec(naked) void setTheEnvironment_shockMachineExtendedCode12() {
 
 __declspec(naked) void setTheEnvironment_shockMachineVersionExtendedCode12() {
 	__asm {
-		push [THE_ENVIRONMENT_SHOCK_MACHINE_VERSION_SIZE]; // num
+		// backup EAX
+		push eax;
+		// compare to the environment.shockMachineVersion
+		mov eax, [esp + 00000934h];
+		cmp eax, [theEnvironmentCompareAddress];
+		jnz do_not_set;
+
+		push[THE_ENVIRONMENT_SHOCK_MACHINE_VERSION_SIZE]; // num
 		lea eax, [theEnvironment_shockMachineVersion];
 		push eax; // source/str
 		lea eax, [ebp - 00000504h];
@@ -4238,10 +4364,15 @@ __declspec(naked) void setTheEnvironment_shockMachineVersionExtendedCode12() {
 		pop eax;
 		pop eax;
 		pop eax;
+		jmp epilogue;
 
+		do_not_set:
+		mov[ebp - 00000504h], 00000000h;
+
+		epilogue:
 		// restore EAX
 		pop eax;
-		jmp [setTheEnvironment_shockMachineVersionExtendedCodeReturnAddress];
+		jmp[setTheEnvironment_shockMachineVersionExtendedCodeReturnAddress];
 	}
 }
 
