@@ -5173,10 +5173,12 @@ bool extender(MoaMmSymbol methodSelector, MODULE module, PIMoaDrMovie moaDrMovie
 				break;
 				case m_setTheEnvironment_shockMachine:
 				setTheEnvironment_shockMachineExtendedCodeReturnAddress = makeExtendedCodeAddress(moduleHandle, 0x000AC1A6);
+				theEnvironmentCompareAddress = makeExtendedCodeAddress(moduleHandle, 0x000AA244);
 				codeExtended = extendCode(moduleHandle, 0x000AC19A, setTheEnvironment_shockMachineExtendedCode85);
 				break;
 				case m_setTheEnvironment_shockMachineVersion:
 				setTheEnvironment_shockMachineVersionExtendedCodeReturnAddress = makeExtendedCodeAddress(moduleHandle, 0x000AC1F9);
+				theEnvironmentCompareAddress = makeExtendedCodeAddress(moduleHandle, 0x000AA244);
 				codeExtended = extendCode(moduleHandle, 0x000AC1EF, setTheEnvironment_shockMachineVersionExtendedCode85);
 				break;
 				case m_setThePlatform:
@@ -5293,10 +5295,12 @@ bool extender(MoaMmSymbol methodSelector, MODULE module, PIMoaDrMovie moaDrMovie
 				break;
 				case m_setTheEnvironment_shockMachine:
 				setTheEnvironment_shockMachineExtendedCodeReturnAddress = makeExtendedCodeAddress(moduleHandle, 0x000AC21A);
+				theEnvironmentCompareAddress = makeExtendedCodeAddress(moduleHandle, 0x000AA2AA);
 				codeExtended = extendCode(moduleHandle, 0x000AC20E, setTheEnvironment_shockMachineExtendedCode851);
 				break;
 				case m_setTheEnvironment_shockMachineVersion:
 				setTheEnvironment_shockMachineVersionExtendedCodeReturnAddress = makeExtendedCodeAddress(moduleHandle, 0x000AC26D);
+				theEnvironmentCompareAddress = makeExtendedCodeAddress(moduleHandle, 0x000AA2AA);
 				codeExtended = extendCode(moduleHandle, 0x000AC263, setTheEnvironment_shockMachineVersionExtendedCode851);
 				break;
 				case m_setThePlatform:
@@ -5413,10 +5417,12 @@ bool extender(MoaMmSymbol methodSelector, MODULE module, PIMoaDrMovie moaDrMovie
 				break;
 				case m_setTheEnvironment_shockMachine:
 				setTheEnvironment_shockMachineExtendedCodeReturnAddress = makeExtendedCodeAddress(moduleHandle, 0x000D09EA);
+				theEnvironmentCompareAddress = makeExtendedCodeAddress(moduleHandle, 0x000CEA64);
 				codeExtended = extendCode(moduleHandle, 0x000D09DE, setTheEnvironment_shockMachineExtendedCode9);
 				break;
 				case m_setTheEnvironment_shockMachineVersion:
 				setTheEnvironment_shockMachineVersionExtendedCodeReturnAddress = makeExtendedCodeAddress(moduleHandle, 0x000D0A3D);
+				theEnvironmentCompareAddress = makeExtendedCodeAddress(moduleHandle, 0x000CEA64);
 				codeExtended = extendCode(moduleHandle, 0x000D0A33, setTheEnvironment_shockMachineVersionExtendedCode9);
 				break;
 				case m_setThePlatform:
@@ -5535,10 +5541,12 @@ bool extender(MoaMmSymbol methodSelector, MODULE module, PIMoaDrMovie moaDrMovie
 				break;
 				case m_setTheEnvironment_shockMachine:
 				setTheEnvironment_shockMachineExtendedCodeReturnAddress = makeExtendedCodeAddress(moduleHandle, 0x000B18E0);
+				theEnvironmentCompareAddress = makeExtendedCodeAddress(moduleHandle, 0x000AF1D0);
 				codeExtended = extendCode(moduleHandle, 0x000B18D4, setTheEnvironment_shockMachineExtendedCode10);
 				break;
 				case m_setTheEnvironment_shockMachineVersion:
 				setTheEnvironment_shockMachineVersionExtendedCodeReturnAddress = makeExtendedCodeAddress(moduleHandle, 0x000B1933);
+				theEnvironmentCompareAddress = makeExtendedCodeAddress(moduleHandle, 0x000AF1D0);
 				codeExtended = extendCode(moduleHandle, 0x000B1929, setTheEnvironment_shockMachineVersionExtendedCode10);
 				break;
 				case m_setThePlatform:
@@ -5659,10 +5667,12 @@ bool extender(MoaMmSymbol methodSelector, MODULE module, PIMoaDrMovie moaDrMovie
 				break;
 				case m_setTheEnvironment_shockMachine:
 				setTheEnvironment_shockMachineExtendedCodeReturnAddress = makeExtendedCodeAddress(moduleHandle, 0x000B2C33);
+				theEnvironmentCompareAddress = makeExtendedCodeAddress(moduleHandle, 0x000B0534);
 				codeExtended = extendCode(moduleHandle, 0x000B2C27, setTheEnvironment_shockMachineExtendedCode101);
 				break;
 				case m_setTheEnvironment_shockMachineVersion:
 				setTheEnvironment_shockMachineVersionExtendedCodeReturnAddress = makeExtendedCodeAddress(moduleHandle, 0x000B2C86);
+				theEnvironmentCompareAddress = makeExtendedCodeAddress(moduleHandle, 0x000B0534);
 				codeExtended = extendCode(moduleHandle, 0x000B2C7C, setTheEnvironment_shockMachineVersionExtendedCode101);
 				break;
 				case m_setThePlatform:
@@ -5783,10 +5793,12 @@ bool extender(MoaMmSymbol methodSelector, MODULE module, PIMoaDrMovie moaDrMovie
 				break;
 				case m_setTheEnvironment_shockMachine:
 				setTheEnvironment_shockMachineExtendedCodeReturnAddress = makeExtendedCodeAddress(moduleHandle, 0x000B303F);
+				theEnvironmentCompareAddress = makeExtendedCodeAddress(moduleHandle, 0x000B092B);
 				codeExtended = extendCode(moduleHandle, 0x000B3033, setTheEnvironment_shockMachineExtendedCode1011);
 				break;
 				case m_setTheEnvironment_shockMachineVersion:
 				setTheEnvironment_shockMachineVersionExtendedCodeReturnAddress = makeExtendedCodeAddress(moduleHandle, 0x000B3092);
+				theEnvironmentCompareAddress = makeExtendedCodeAddress(moduleHandle, 0x000B092B);
 				codeExtended = extendCode(moduleHandle, 0x000B3088, setTheEnvironment_shockMachineVersionExtendedCode1011);
 				break;
 				case m_setThePlatform:
@@ -5907,10 +5919,12 @@ bool extender(MoaMmSymbol methodSelector, MODULE module, PIMoaDrMovie moaDrMovie
 				break;
 				case m_setTheEnvironment_shockMachine:
 				setTheEnvironment_shockMachineExtendedCodeReturnAddress = makeExtendedCodeAddress(moduleHandle, 0x000D9C0A);
+				theEnvironmentCompareAddress = makeExtendedCodeAddress(moduleHandle, 0x000DA83A);
 				codeExtended = extendCode(moduleHandle, 0x000D9C03, setTheEnvironment_shockMachineExtendedCode11);
 				break;
 				case m_setTheEnvironment_shockMachineVersion:
 				setTheEnvironment_shockMachineVersionExtendedCodeReturnAddress = makeExtendedCodeAddress(moduleHandle, 0x000D9C4C);
+				theEnvironmentCompareAddress = makeExtendedCodeAddress(moduleHandle, 0x000DA83A);
 				codeExtended = extendCode(moduleHandle, 0x000D9C44, setTheEnvironment_shockMachineVersionExtendedCode11);
 				break;
 				case m_setThePlatform:
@@ -6031,10 +6045,12 @@ bool extender(MoaMmSymbol methodSelector, MODULE module, PIMoaDrMovie moaDrMovie
 				break;
 				case m_setTheEnvironment_shockMachine:
 				setTheEnvironment_shockMachineExtendedCodeReturnAddress = makeExtendedCodeAddress(moduleHandle, 0x000D9B9A);
+				theEnvironmentCompareAddress = makeExtendedCodeAddress(moduleHandle, 0x000DA7CA);
 				codeExtended = extendCode(moduleHandle, 0x000D9B93, setTheEnvironment_shockMachineExtendedCode1103);
 				break;
 				case m_setTheEnvironment_shockMachineVersion:
 				setTheEnvironment_shockMachineVersionExtendedCodeReturnAddress = makeExtendedCodeAddress(moduleHandle, 0x000D9BDC);
+				theEnvironmentCompareAddress = makeExtendedCodeAddress(moduleHandle, 0x000DA7CA);
 				codeExtended = extendCode(moduleHandle, 0x000D9BD4, setTheEnvironment_shockMachineVersionExtendedCode1103);
 				break;
 				case m_setThePlatform:
@@ -6155,10 +6171,12 @@ bool extender(MoaMmSymbol methodSelector, MODULE module, PIMoaDrMovie moaDrMovie
 				break;
 				case m_setTheEnvironment_shockMachine:
 				setTheEnvironment_shockMachineExtendedCodeReturnAddress = makeExtendedCodeAddress(moduleHandle, 0x000DBD4A);
+				theEnvironmentCompareAddress = makeExtendedCodeAddress(moduleHandle, 0x000DC97A);
 				codeExtended = extendCode(moduleHandle, 0x000DBD43, setTheEnvironment_shockMachineExtendedCode115);
 				break;
 				case m_setTheEnvironment_shockMachineVersion:
 				setTheEnvironment_shockMachineVersionExtendedCodeReturnAddress = makeExtendedCodeAddress(moduleHandle, 0x000DBD8C);
+				theEnvironmentCompareAddress = makeExtendedCodeAddress(moduleHandle, 0x000DC97A);
 				codeExtended = extendCode(moduleHandle, 0x000DBD84, setTheEnvironment_shockMachineVersionExtendedCode115);
 				break;
 				case m_setThePlatform:
@@ -6279,10 +6297,12 @@ bool extender(MoaMmSymbol methodSelector, MODULE module, PIMoaDrMovie moaDrMovie
 				break;
 				case m_setTheEnvironment_shockMachine:
 				setTheEnvironment_shockMachineExtendedCodeReturnAddress = makeExtendedCodeAddress(moduleHandle, 0x000DC7CA);
+				theEnvironmentCompareAddress = makeExtendedCodeAddress(moduleHandle, 0x000DD3FA);
 				codeExtended = extendCode(moduleHandle, 0x000DC7C3, setTheEnvironment_shockMachineExtendedCode1158);
 				break;
 				case m_setTheEnvironment_shockMachineVersion:
 				setTheEnvironment_shockMachineVersionExtendedCodeReturnAddress = makeExtendedCodeAddress(moduleHandle, 0x000DC80C);
+				theEnvironmentCompareAddress = makeExtendedCodeAddress(moduleHandle, 0x000DD3FA);
 				codeExtended = extendCode(moduleHandle, 0x000DC804, setTheEnvironment_shockMachineVersionExtendedCode1158);
 				break;
 				case m_setThePlatform:
@@ -6403,10 +6423,12 @@ bool extender(MoaMmSymbol methodSelector, MODULE module, PIMoaDrMovie moaDrMovie
 				break;
 				case m_setTheEnvironment_shockMachine:
 				setTheEnvironment_shockMachineExtendedCodeReturnAddress = makeExtendedCodeAddress(moduleHandle, 0x000DD84A);
+				theEnvironmentCompareAddress = makeExtendedCodeAddress(moduleHandle, 0x000DE47A);
 				codeExtended = extendCode(moduleHandle, 0x000DD843, setTheEnvironment_shockMachineExtendedCode1159);
 				break;
 				case m_setTheEnvironment_shockMachineVersion:
 				setTheEnvironment_shockMachineVersionExtendedCodeReturnAddress = makeExtendedCodeAddress(moduleHandle, 0x000DD88C);
+				theEnvironmentCompareAddress = makeExtendedCodeAddress(moduleHandle, 0x000DE47A);
 				codeExtended = extendCode(moduleHandle, 0x000DD884, setTheEnvironment_shockMachineVersionExtendedCode1159);
 				break;
 				case m_setThePlatform:
@@ -6529,10 +6551,12 @@ bool extender(MoaMmSymbol methodSelector, MODULE module, PIMoaDrMovie moaDrMovie
 				break;
 				case m_setTheEnvironment_shockMachine:
 				setTheEnvironment_shockMachineExtendedCodeReturnAddress = makeExtendedCodeAddress(moduleHandle, 0x0000FB4B);
+				theEnvironmentCompareAddress = makeExtendedCodeAddress(moduleHandle, 0x00010AA5);
 				codeExtended = extendCode(moduleHandle, 0x0000FB42, setTheEnvironment_shockMachineExtendedCode12);
 				break;
 				case m_setTheEnvironment_shockMachineVersion:
 				setTheEnvironment_shockMachineVersionExtendedCodeReturnAddress = makeExtendedCodeAddress(moduleHandle, 0x0000FB95);
+				theEnvironmentCompareAddress = makeExtendedCodeAddress(moduleHandle, 0x00010AA5);
 				codeExtended = extendCode(moduleHandle, 0x0000FB8E, setTheEnvironment_shockMachineVersionExtendedCode12);
 				break;
 				case m_setThePlatform:
